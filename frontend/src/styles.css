@@ -1,9 +1,9 @@
-﻿:root {
+:root {
   color-scheme: dark;
   --bg: #081019;
-  --panel: rgba(12, 20, 30, 0.8);
-  --panel-soft: rgba(13, 25, 37, 0.62);
-  --panel-border: rgba(126, 176, 214, 0.18);
+  --panel: rgba(11, 19, 29, 0.48);
+  --panel-soft: rgba(14, 24, 36, 0.42);
+  --panel-border: rgba(126, 176, 214, 0.22);
   --text: #edf5ff;
   --muted: #93a8bc;
   --muted-soft: #b8cad8;
@@ -13,7 +13,10 @@
   --accent-green: #4ce1a2;
   --accent-gold: #f4d06f;
   --accent-red: #ff6b6b;
-  --shadow: 0 24px 70px rgba(0, 0, 0, 0.42);
+  --shadow: 0 24px 70px rgba(0, 0, 0, 0.34);
+  --panel-gap: 18px;
+  --left-panel-width: 360px;
+  --right-panel-width: 320px;
   font-family: Bahnschrift, "Segoe UI", sans-serif;
   background:
     radial-gradient(circle at 12% 12%, rgba(83, 199, 255, 0.18), transparent 20%),
@@ -50,15 +53,19 @@ button {
 
 .app-shell {
   position: relative;
-  display: grid;
-  grid-template-columns: 340px 1fr 340px;
   min-height: 100vh;
   overflow: hidden;
+  --active-right-panel-width: 0px;
+}
+
+.app-shell.detail-open {
+  --active-right-panel-width: var(--right-panel-width);
 }
 
 .backdrop {
   position: absolute;
   inset: 0;
+  z-index: 1;
   background:
     linear-gradient(90deg, rgba(83, 199, 255, 0.04) 1px, transparent 1px),
     linear-gradient(rgba(83, 199, 255, 0.03) 1px, transparent 1px);
@@ -67,29 +74,59 @@ button {
   pointer-events: none;
 }
 
-.panel,
 .graph-panel {
-  position: relative;
-  z-index: 1;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  padding: 0;
 }
 
 .panel {
+  position: absolute;
+  top: var(--panel-gap);
+  z-index: 3;
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  padding: 1.25rem;
+  padding: 1.1rem;
+  border: 1px solid var(--panel-border);
+  border-radius: 28px;
   background: var(--panel);
-  backdrop-filter: blur(18px);
-  border-right: 1px solid var(--panel-border);
+  backdrop-filter: blur(24px) saturate(135%);
+  box-shadow: var(--shadow);
+  scrollbar-width: none;
+}
+
+.panel::-webkit-scrollbar,
+.result-list::-webkit-scrollbar,
+.meta-list::-webkit-scrollbar {
+  display: none;
+}
+
+.panel-left {
+  left: var(--panel-gap);
+  width: min(var(--left-panel-width), calc(100vw - 2rem));
+  max-height: calc(100vh - var(--panel-gap) * 2);
+  overflow-y: auto;
 }
 
 .panel-right {
-  border-right: none;
-  border-left: 1px solid var(--panel-border);
+  right: var(--panel-gap);
+  width: min(var(--right-panel-width), calc(100vw - 2rem));
+  max-height: calc(100vh - var(--panel-gap) * 2);
+  overflow-y: auto;
+  transition: opacity 220ms ease, transform 220ms ease;
 }
 
-.graph-panel {
-  padding: 1rem;
+.panel-right.is-hidden {
+  opacity: 0;
+  transform: translateX(28px);
+  pointer-events: none;
+}
+
+.panel-right.is-visible {
+  opacity: 1;
+  transform: translateX(0);
 }
 
 .panel-header {
@@ -99,13 +136,13 @@ button {
 }
 
 .panel-hero {
-  padding: 1.1rem 1.1rem 1.15rem;
-  border: 1px solid rgba(126, 176, 214, 0.18);
-  border-radius: 26px;
+  padding: 1.15rem 1.15rem 1.2rem;
+  border: 1px solid rgba(126, 176, 214, 0.16);
+  border-radius: 24px;
   background:
     radial-gradient(circle at top left, rgba(83, 199, 255, 0.14), transparent 34%),
-    linear-gradient(160deg, rgba(9, 18, 29, 0.92), rgba(7, 14, 21, 0.88));
-  box-shadow: var(--shadow);
+    linear-gradient(160deg, rgba(9, 18, 29, 0.72), rgba(7, 14, 21, 0.56));
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.18);
 }
 
 .panel-header h1,
@@ -139,14 +176,14 @@ button {
 
 .glass-block {
   padding: 1rem;
-  border: 1px solid rgba(126, 176, 214, 0.16);
+  border: 1px solid rgba(126, 176, 214, 0.14);
   border-radius: 22px;
-  background: linear-gradient(180deg, rgba(14, 24, 35, 0.92), rgba(8, 16, 24, 0.82));
-  box-shadow: var(--shadow);
+  background: linear-gradient(180deg, rgba(14, 24, 35, 0.52), rgba(8, 16, 24, 0.42));
+  box-shadow: 0 14px 42px rgba(0, 0, 0, 0.16);
 }
 
 .glass-block-soft {
-  background: linear-gradient(180deg, rgba(14, 24, 35, 0.82), rgba(10, 18, 26, 0.74));
+  background: linear-gradient(180deg, rgba(14, 24, 35, 0.42), rgba(10, 18, 26, 0.34));
 }
 
 .field-label,
@@ -183,7 +220,7 @@ button {
   padding: 0.95rem 1rem;
   border-radius: 18px;
   border: 1px solid rgba(126, 176, 214, 0.16);
-  background: rgba(7, 14, 21, 0.72);
+  background: rgba(7, 14, 21, 0.42);
 }
 
 .metric-card span,
@@ -208,7 +245,7 @@ button {
 }
 
 .detail-item-strong {
-  background: linear-gradient(135deg, rgba(83, 199, 255, 0.14), rgba(7, 14, 21, 0.76));
+  background: linear-gradient(135deg, rgba(83, 199, 255, 0.14), rgba(7, 14, 21, 0.42));
 }
 
 .sample-grid {
@@ -221,7 +258,7 @@ button {
   border: 1px solid rgba(126, 176, 214, 0.16);
   border-radius: 18px;
   padding: 0.85rem 0.9rem;
-  background: rgba(7, 14, 21, 0.68);
+  background: rgba(7, 14, 21, 0.36);
   color: var(--text);
   text-align: left;
   cursor: pointer;
@@ -254,7 +291,7 @@ button {
 .sample-chip.is-active,
 .result-card.is-active {
   border-color: rgba(83, 199, 255, 0.72);
-  background: linear-gradient(135deg, rgba(83, 199, 255, 0.14), rgba(7, 14, 21, 0.84));
+  background: linear-gradient(135deg, rgba(83, 199, 255, 0.14), rgba(7, 14, 21, 0.5));
 }
 
 .search-row {
@@ -267,7 +304,7 @@ button {
   width: 100%;
   padding: 0.86rem 0.95rem;
   border: 1px solid rgba(126, 176, 214, 0.2);
-  background: rgba(5, 13, 20, 0.78);
+  background: rgba(5, 13, 20, 0.52);
   color: var(--text);
   border-radius: 14px;
   outline: none;
@@ -310,18 +347,19 @@ button {
   display: flex;
   flex-direction: column;
   gap: 0.72rem;
-  overflow: auto;
+  overflow: visible;
+  scrollbar-width: none;
 }
 
 .result-card {
   border: 1px solid rgba(126, 176, 214, 0.14);
   border-radius: 18px;
-  background: linear-gradient(180deg, rgba(13, 25, 39, 0.94), rgba(7, 17, 26, 0.9));
+  background: linear-gradient(180deg, rgba(13, 25, 39, 0.62), rgba(7, 17, 26, 0.52));
   color: var(--text);
   text-align: left;
   padding: 1rem;
   cursor: pointer;
-  box-shadow: var(--shadow);
+  box-shadow: 0 14px 38px rgba(0, 0, 0, 0.16);
   transition: transform 150ms ease, border-color 150ms ease, background 150ms ease;
 }
 
@@ -395,14 +433,12 @@ button {
 .graph-stage,
 .graph-empty {
   position: relative;
-  height: calc(100vh - 2rem);
-  border-radius: 30px;
+  width: 100vw;
+  height: 100vh;
   overflow: hidden;
   background:
     radial-gradient(circle at top, rgba(83, 199, 255, 0.14), transparent 28%),
     linear-gradient(180deg, rgba(7, 20, 30, 0.98), rgba(4, 10, 15, 0.98));
-  border: 1px solid rgba(126, 176, 214, 0.16);
-  box-shadow: var(--shadow);
 }
 
 .graph-empty {
@@ -424,7 +460,9 @@ button {
 
 .graph-status {
   position: absolute;
-  inset: 1rem auto auto 1rem;
+  top: var(--panel-gap);
+  left: calc(var(--left-panel-width) + var(--panel-gap) * 2);
+  right: calc(var(--active-right-panel-width) + var(--panel-gap) * 2);
   display: flex;
   gap: 0.72rem;
   flex-wrap: wrap;
@@ -436,9 +474,9 @@ button {
 .meta-row,
 .graph-overlay {
   border: 1px solid rgba(126, 176, 214, 0.14);
-  background: rgba(8, 18, 28, 0.78);
-  backdrop-filter: blur(14px);
-  box-shadow: var(--shadow);
+  background: rgba(8, 18, 28, 0.48);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.16);
 }
 
 .graph-status span {
@@ -457,13 +495,13 @@ button {
 }
 
 .graph-overlay-top-right {
-  top: 1rem;
-  right: 1rem;
+  top: 4.5rem;
+  right: calc(var(--active-right-panel-width) + var(--panel-gap) * 2);
 }
 
 .graph-overlay-bottom-left {
-  left: 1rem;
-  bottom: 1rem;
+  left: calc(var(--left-panel-width) + var(--panel-gap) * 2);
+  bottom: var(--panel-gap);
 }
 
 .graph-overlay-title {
@@ -542,45 +580,73 @@ button {
 }
 
 @media (max-width: 1280px) {
-  .app-shell {
-    grid-template-columns: 320px 1fr 320px;
-  }
-
-  .sample-grid {
-    grid-template-columns: 1fr 1fr;
+  :root {
+    --left-panel-width: 332px;
+    --right-panel-width: 296px;
   }
 }
 
-@media (max-width: 1160px) {
-  .app-shell {
-    grid-template-columns: 320px 1fr;
-  }
-
-  .panel-right {
-    grid-column: 1 / -1;
-    border-left: none;
-    border-top: 1px solid var(--panel-border);
-  }
-
-  .graph-stage,
-  .graph-empty {
-    height: 68vh;
+@media (max-width: 1080px) {
+  :root {
+    --left-panel-width: 300px;
+    --right-panel-width: 272px;
   }
 }
 
-@media (max-width: 860px) {
-  .app-shell {
-    grid-template-columns: 1fr;
+@media (max-width: 920px) {
+  .panel {
+    width: min(320px, calc(100vw - 2rem));
   }
 
-  .panel,
   .panel-right {
-    border: none;
-    border-bottom: 1px solid var(--panel-border);
+    right: 1rem;
+    top: auto;
+    bottom: 1rem;
+    max-height: 38vh;
   }
 
-  .graph-panel {
-    padding-top: 0;
+  .panel-left {
+    left: 1rem;
+    top: 1rem;
+    max-height: 56vh;
+  }
+
+  .graph-status {
+    left: 1rem;
+    right: 1rem;
+    top: 1rem;
+    justify-content: center;
+  }
+
+  .graph-overlay-top-right {
+    top: auto;
+    right: 1rem;
+    bottom: calc(38vh + 2rem);
+  }
+
+  .graph-overlay-bottom-left {
+    left: 1rem;
+    bottom: calc(38vh + 2rem);
+  }
+}
+
+@media (max-width: 720px) {
+  .panel {
+    position: absolute;
+    left: 0.75rem;
+    right: 0.75rem;
+    width: auto;
+  }
+
+  .panel-left {
+    top: 0.75rem;
+    max-height: 50vh;
+  }
+
+  .panel-right {
+    top: auto;
+    bottom: 0.75rem;
+    max-height: 30vh;
   }
 
   .metric-grid,
@@ -590,19 +656,14 @@ button {
     grid-template-columns: 1fr;
   }
 
-  .graph-stage,
-  .graph-empty {
-    height: 64vh;
-  }
-
-  .graph-overlay,
   .graph-status {
-    position: absolute;
+    top: auto;
+    bottom: calc(34vh + 1rem);
+    left: 0.75rem;
+    right: 0.75rem;
   }
 
-  .graph-overlay-top-right {
-    top: auto;
-    right: 1rem;
-    bottom: 10.8rem;
+  .graph-overlay {
+    display: none;
   }
 }

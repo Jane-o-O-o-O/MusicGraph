@@ -1,4 +1,4 @@
-﻿import { startTransition, useDeferredValue, useEffect, useState } from "react";
+import { startTransition, useDeferredValue, useEffect, useState } from "react";
 
 import { fetchEntity, fetchGraph, fetchPath, searchEntities } from "./api/client";
 import { DetailPanel } from "./components/DetailPanel";
@@ -9,27 +9,39 @@ import type { EntityDetails, GraphData, SearchItem } from "./types/graph";
 const SAMPLE_ENTITIES: SearchItem[] = [
   {
     id: "person_jay_chou",
-    name: "周杰伦",
+    name: "\u5468\u6770\u4f26",
     type: "Person",
     summary: "Singer, composer, and producer.",
   },
   {
     id: "person_fang_wenshan",
-    name: "方文山",
+    name: "\u65b9\u6587\u5c71",
     type: "Person",
     summary: "Lyricist and frequent collaborator.",
   },
   {
+    id: "person_jolin_tsai",
+    name: "\u8521\u4f9d\u6797",
+    type: "Person",
+    summary: "Pop singer with crossover collaborations.",
+  },
+  {
     id: "band_mayday",
-    name: "五月天",
+    name: "\u4e94\u6708\u5929",
     type: "Band",
     summary: "Mandarin rock band.",
   },
   {
     id: "work_qinghuaci",
-    name: "青花瓷",
+    name: "\u9752\u82b1\u74f7",
     type: "Work",
     summary: "A representative Jay Chou work.",
+  },
+  {
+    id: "work_turanhaoxiangni",
+    name: "\u7a81\u7136\u597d\u60f3\u4f60",
+    type: "Work",
+    summary: "A signature Mayday stadium ballad.",
   },
 ];
 
@@ -65,20 +77,22 @@ export default function App() {
   const [expandedNodeIds, setExpandedNodeIds] = useState<string[]>([]);
   const [highlightedNodeIds, setHighlightedNodeIds] = useState<string[]>([]);
   const [highlightedLinkIds, setHighlightedLinkIds] = useState<string[]>([]);
+  const [detailVisible, setDetailVisible] = useState(false);
 
   const deferredGraphData = useDeferredValue(graphData);
 
   useEffect(() => {
-    void loadEntityContext("person_jay_chou", true);
+    void loadEntityContext("person_jay_chou", true, false);
   }, []);
 
-  async function loadEntityContext(entityId: string, replaceGraph: boolean) {
+  async function loadEntityContext(entityId: string, replaceGraph: boolean, showDetail: boolean) {
     setErrorMessage(null);
     setGraphLoading(true);
     try {
       const [entity, graph] = await Promise.all([fetchEntity(entityId), fetchGraph(entityId, 1)]);
       startTransition(() => {
-        setSelectedEntity(entity);
+        setSelectedEntity(showDetail ? entity : null);
+        setDetailVisible(showDetail);
         setHighlightedNodeIds([entityId]);
         setHighlightedLinkIds([]);
         setExpandedNodeIds((current) =>
@@ -115,7 +129,7 @@ export default function App() {
 
   async function handleSelect(item: SearchItem) {
     setPathFrom(item.id);
-    await loadEntityContext(item.id, true);
+    await loadEntityContext(item.id, true, true);
   }
 
   async function handleNodeClick(nodeId: string) {
@@ -123,6 +137,7 @@ export default function App() {
     try {
       const entity = await fetchEntity(nodeId);
       setSelectedEntity(entity);
+      setDetailVisible(true);
       setHighlightedNodeIds([nodeId]);
       setPathFrom(nodeId);
 
@@ -168,7 +183,7 @@ export default function App() {
   }
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${detailVisible ? "detail-open" : ""}`}>
       <div className="backdrop" />
       <SearchPanel
         query={query}
@@ -214,7 +229,7 @@ export default function App() {
         />
       </main>
 
-      <DetailPanel entity={selectedEntity} errorMessage={errorMessage} />
+      <DetailPanel entity={selectedEntity} errorMessage={errorMessage} visible={detailVisible} />
     </div>
   );
 }
