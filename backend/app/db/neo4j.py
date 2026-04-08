@@ -1,11 +1,13 @@
-from collections.abc import Iterable
+﻿from collections.abc import Iterable
 
 from neo4j import GraphDatabase
+from neo4j.exceptions import Neo4jError
 from neo4j.graph import Node, Path, Relationship
 
 from app.schemas.graph import EntityDetails, GraphLink, GraphNode, GraphResponse, SearchItem
 
 RESERVED_NODE_FIELDS = {"id", "name", "type", "aliases", "summary"}
+FULLTEXT_INDEX_NAME = "entity_fulltext"
 
 
 def _serialize_value(value):
@@ -89,42 +91,57 @@ class Neo4jGraphRepository:
         self._driver.close()
 
     def search(self, query: str, *, entity_type: str | None, limit: int) -> list[SearchItem]:
-        label_clause = f":{entity_type}" if entity_type else ""
-
-        if query.strip():
-            cypher = f"""
-            MATCH (n{label_clause})
-            WHERE toLower(n.name) CONTAINS toLower($query)
-               OR any(alias IN coalesce(n.aliases, []) WHERE toLower(alias) CONTAINS toLower($query))
-            RETURN n
-            ORDER BY coalesce(n.popularity, 0) DESC, n.name ASC
-            LIMIT $limit
-            """
-            params = {"query": query.strip(), "limit": limit}
-        else:
-            cypher = f"""
-            MATCH (n{label_clause})
-            RETURN n
-            ORDER BY coalesce(n.popularity, 0) DESC, n.name ASC
-            LIMIT $limit
-            """
-            params = {"limit": limit}
-
         with self._driver.session(database=self._database) as session:
-            records = session.run(cypher, params)
-            items: list[SearchItem] = []
-            for record in records:
-                node = record["n"]
-                props = dict(node)
-                items.append(
-                    SearchItem(
-                        id=props["id"],
-                        name=props.get("name", props["id"]),
-                        type=props.get("type") or next(iter(node.labels), "Entity"),
-                        summary=props.get("summary"),
-                    )
+            if not query.strip():
+                return self._run_search(
+                    session,
+                    cypher="""
+                    MATCH (n)
+                    WHERE $entity_type IS NULL OR n.type = $entity_type
+                    RETURN n
+                    ORDER BY coalesce(n.popularity, 0) DESC, n.name ASC
+                    LIMIT $limit
+                    """,
+                    params={"entity_type": entity_type, "limit": limit},
                 )
-            return items
+
+            try:
+                return self._run_search(
+                    session,
+                    cypher="""
+                    CALL db.index.fulltext.queryNodes($index_name, $query) YIELD node, score
+                    WHERE $entity_type IS NULL OR node.type = $entity_type
+                    RETURN node AS n
+                    ORDER BY score DESC, coalesce(node.popularity, 0) DESC, node.name ASC
+                    LIMIT $limit
+                    """,
+                    params={
+                        "index_name": FULLTEXT_INDEX_NAME,
+                        "query": query.strip(),
+                        "entity_type": entity_type,
+                        "limit": limit,
+                    },
+                )
+            except Neo4jError:
+                return self._run_search(
+                    session,
+                    cypher="""
+                    MATCH (n)
+                    WHERE ($entity_type IS NULL OR n.type = $entity_type)
+                      AND (
+                        toLower(coalesce(n.name, "")) CONTAINS toLower($query)
+                        OR any(alias IN coalesce(n.aliases, []) WHERE toLower(alias) CONTAINS toLower($query))
+                      )
+                    RETURN n
+                    ORDER BY coalesce(n.popularity, 0) DESC, n.name ASC
+                    LIMIT $limit
+                    """,
+                    params={
+                        "query": query.strip(),
+                        "entity_type": entity_type,
+                        "limit": limit,
+                    },
+                )
 
     def get_entity(self, entity_id: str) -> EntityDetails | None:
         cypher = """
@@ -161,6 +178,23 @@ class Neo4jGraphRepository:
                 {"source_id": source_id, "target_id": target_id},
             )
             return self._paths_to_graph(records)
+
+    @staticmethod
+    def _run_search(session, *, cypher: str, params: dict) -> list[SearchItem]:
+        records = list(session.run(cypher, params))
+        items: list[SearchItem] = []
+        for record in records:
+            node = record["n"]
+            props = dict(node)
+            items.append(
+                SearchItem(
+                    id=props["id"],
+                    name=props.get("name", props["id"]),
+                    type=props.get("type") or next(iter(node.labels), "Entity"),
+                    summary=props.get("summary"),
+                )
+            )
+        return items
 
     @staticmethod
     def _paths_to_graph(records: Iterable) -> GraphResponse:

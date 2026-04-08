@@ -1,4 +1,4 @@
-import type { SearchItem } from "../types/graph";
+﻿import type { SearchItem } from "../types/graph";
 
 interface SearchPanelProps {
   query: string;
@@ -8,12 +8,17 @@ interface SearchPanelProps {
   loading: boolean;
   pathLoading: boolean;
   results: SearchItem[];
+  selectedEntityId: string | null;
+  sampleItems: SearchItem[];
+  graphNodeCount: number;
+  graphLinkCount: number;
+  expandedCount: number;
   onQueryChange: (value: string) => void;
   onEntityTypeChange: (value: string) => void;
   onPathFromChange: (value: string) => void;
   onPathToChange: (value: string) => void;
   onSearch: () => void;
-  onSearchKeyDown: (value: string) => void;
+  onSearchKeyDown: () => void;
   onSelect: (item: SearchItem) => void;
   onHighlightPath: () => void;
 }
@@ -29,6 +34,11 @@ export function SearchPanel(props: SearchPanelProps) {
     loading,
     pathLoading,
     results,
+    selectedEntityId,
+    sampleItems,
+    graphNodeCount,
+    graphLinkCount,
+    expandedCount,
     onQueryChange,
     onEntityTypeChange,
     onPathFromChange,
@@ -41,38 +51,79 @@ export function SearchPanel(props: SearchPanelProps) {
 
   return (
     <aside className="panel panel-left">
-      <div className="panel-header">
-        <p className="eyebrow">Search</p>
-        <h1>MusicGraph</h1>
+      <div className="panel-header panel-hero">
+        <p className="eyebrow">Music Explorer</p>
+        <h1>音乐关系图谱</h1>
         <p className="panel-copy">
-          Search artists, bands, works, and albums, then expand their local graph in 3D.
+          搜索人物、乐团、作品与专辑，在 3D 空间中逐层展开音乐世界的关系网络。
         </p>
       </div>
 
-      <section className="stack">
+      <section className="stack glass-block">
+        <div className="section-title">
+          <h2>当前图谱</h2>
+          <span>Live</span>
+        </div>
+        <div className="metric-grid">
+          <div className="metric-card">
+            <span>节点</span>
+            <strong>{graphNodeCount}</strong>
+          </div>
+          <div className="metric-card">
+            <span>关系</span>
+            <strong>{graphLinkCount}</strong>
+          </div>
+          <div className="metric-card metric-card-wide">
+            <span>已展开核心节点</span>
+            <strong>{expandedCount}</strong>
+          </div>
+        </div>
+      </section>
+
+      <section className="stack glass-block">
+        <div className="section-title">
+          <h2>快速开始</h2>
+          <span>Mock Seed</span>
+        </div>
+        <div className="sample-grid">
+          {sampleItems.map((item) => (
+            <button
+              key={item.id}
+              className={`sample-chip ${selectedEntityId === item.id ? "is-active" : ""}`}
+              onClick={() => onSelect(item)}
+              type="button"
+            >
+              <span>{item.name}</span>
+              <small>{item.type}</small>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className="stack glass-block">
         <label className="field-label" htmlFor="search-input">
-          Keyword
+          搜索实体
         </label>
         <div className="search-row">
           <input
             id="search-input"
             className="text-input"
-            placeholder="Jay Chou, 青花瓷, 五月天..."
+            placeholder="周杰伦、青花瓷、五月天..."
             value={query}
             onChange={(event) => onQueryChange(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === "Enter") {
-                onSearchKeyDown(query);
+                onSearchKeyDown();
               }
             }}
           />
           <button className="primary-button" onClick={onSearch} disabled={loading}>
-            {loading ? "Searching" : "Search"}
+            {loading ? "搜索中" : "搜索"}
           </button>
         </div>
 
         <label className="field-label" htmlFor="entity-type">
-          Entity type
+          实体类型
         </label>
         <select
           id="entity-type"
@@ -82,58 +133,59 @@ export function SearchPanel(props: SearchPanelProps) {
         >
           {ENTITY_TYPES.map((option) => (
             <option key={option || "all"} value={option}>
-              {option || "All"}
+              {option || "全部"}
             </option>
           ))}
         </select>
       </section>
 
-      <section className="stack">
+      <section className="stack glass-block">
         <div className="section-title">
-          <h2>Results</h2>
+          <h2>搜索结果</h2>
           <span>{results.length}</span>
         </div>
         <div className="result-list">
           {results.length === 0 ? (
-            <p className="placeholder">Run a search to load entities.</p>
+            <p className="placeholder">先输入关键词，或者直接点击上方样例实体。</p>
           ) : (
             results.map((item) => (
               <button
                 key={item.id}
-                className="result-card"
+                className={`result-card ${selectedEntityId === item.id ? "is-active" : ""}`}
                 onClick={() => onSelect(item)}
                 type="button"
               >
                 <span className={`type-pill type-${item.type.toLowerCase()}`}>{item.type}</span>
                 <strong>{item.name}</strong>
                 <small>{item.id}</small>
-                <p>{item.summary ?? "No summary available."}</p>
+                <p>{item.summary ?? "暂无简介。"}</p>
               </button>
             ))
           )}
         </div>
       </section>
 
-      <section className="stack">
+      <section className="stack glass-block">
         <div className="section-title">
-          <h2>Path Tool</h2>
-          <span>2 nodes</span>
+          <h2>路径聚焦</h2>
+          <span>2 Nodes</span>
         </div>
         <input
           className="text-input"
-          placeholder="Source entity id"
+          placeholder="起点实体 id"
           value={pathFrom}
           onChange={(event) => onPathFromChange(event.target.value)}
         />
         <input
           className="text-input"
-          placeholder="Target entity id"
+          placeholder="终点实体 id"
           value={pathTo}
           onChange={(event) => onPathToChange(event.target.value)}
         />
         <button className="secondary-button" onClick={onHighlightPath} disabled={pathLoading}>
-          {pathLoading ? "Loading path" : "Highlight path"}
+          {pathLoading ? "路径计算中" : "高亮路径"}
         </button>
+        <p className="panel-note">点击图中节点会自动把它设为当前聚焦实体，并在首次点击时展开一跳邻居。</p>
       </section>
     </aside>
   );

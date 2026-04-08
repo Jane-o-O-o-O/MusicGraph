@@ -1,10 +1,37 @@
-import { startTransition, useDeferredValue, useEffect, useState } from "react";
+﻿import { startTransition, useDeferredValue, useEffect, useState } from "react";
 
 import { fetchEntity, fetchGraph, fetchPath, searchEntities } from "./api/client";
 import { DetailPanel } from "./components/DetailPanel";
 import { GraphView } from "./components/GraphView";
 import { SearchPanel } from "./components/SearchPanel";
 import type { EntityDetails, GraphData, SearchItem } from "./types/graph";
+
+const SAMPLE_ENTITIES: SearchItem[] = [
+  {
+    id: "person_jay_chou",
+    name: "周杰伦",
+    type: "Person",
+    summary: "Singer, composer, and producer.",
+  },
+  {
+    id: "person_fang_wenshan",
+    name: "方文山",
+    type: "Person",
+    summary: "Lyricist and frequent collaborator.",
+  },
+  {
+    id: "band_mayday",
+    name: "五月天",
+    type: "Band",
+    summary: "Mandarin rock band.",
+  },
+  {
+    id: "work_qinghuaci",
+    name: "青花瓷",
+    type: "Work",
+    summary: "A representative Jay Chou work.",
+  },
+];
 
 function mergeGraphData(currentGraph: GraphData, incomingGraph: GraphData): GraphData {
   const nodeMap = new Map(currentGraph.nodes.map((node) => [node.id, node]));
@@ -97,6 +124,7 @@ export default function App() {
       const entity = await fetchEntity(nodeId);
       setSelectedEntity(entity);
       setHighlightedNodeIds([nodeId]);
+      setPathFrom(nodeId);
 
       if (!expandedNodeIds.includes(nodeId)) {
         setGraphLoading(true);
@@ -134,6 +162,11 @@ export default function App() {
     }
   }
 
+  const typeCounts: Record<string, number> = {};
+  for (const node of graphData.nodes) {
+    typeCounts[node.type] = (typeCounts[node.type] ?? 0) + 1;
+  }
+
   return (
     <div className="app-shell">
       <div className="backdrop" />
@@ -145,6 +178,11 @@ export default function App() {
         loading={searchLoading}
         pathLoading={pathLoading}
         results={results}
+        selectedEntityId={selectedEntity?.id ?? null}
+        sampleItems={SAMPLE_ENTITIES}
+        graphNodeCount={graphData.nodes.length}
+        graphLinkCount={graphData.links.length}
+        expandedCount={expandedNodeIds.length}
         onQueryChange={setQuery}
         onEntityTypeChange={setEntityType}
         onPathFromChange={setPathFrom}
@@ -167,6 +205,9 @@ export default function App() {
           loading={graphLoading}
           highlightedNodeIds={highlightedNodeIds}
           highlightedLinkIds={highlightedLinkIds}
+          selectedEntityId={selectedEntity?.id ?? null}
+          expandedCount={expandedNodeIds.length}
+          typeCounts={typeCounts}
           onNodeClick={(node) => {
             void handleNodeClick(node.id);
           }}

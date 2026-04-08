@@ -1,9 +1,12 @@
-from collections import deque
+﻿from collections import deque
+from typing import TYPE_CHECKING
 
 from app.core.config import Settings
 from app.data.mock_graph import MOCK_NODES, MOCK_RELATIONSHIPS
-from app.db.neo4j import Neo4jGraphRepository
 from app.schemas.graph import EntityDetails, GraphLink, GraphNode, GraphResponse, SearchItem
+
+if TYPE_CHECKING:
+    from app.db.neo4j import Neo4jGraphRepository
 
 RESERVED_NODE_FIELDS = {"id", "name", "type", "aliases", "summary"}
 
@@ -189,6 +192,13 @@ class GraphService:
             ]
         ):
             raise RuntimeError("Neo4j settings are incomplete.")
+
+        try:
+            from app.db.neo4j import Neo4jGraphRepository
+        except ModuleNotFoundError as exc:
+            raise RuntimeError(
+                "The neo4j package is not installed. Run 'pip install -r requirements.txt'."
+            ) from exc
 
         self._neo4j_repository = Neo4jGraphRepository(
             uri=self._settings.neo4j_uri,
