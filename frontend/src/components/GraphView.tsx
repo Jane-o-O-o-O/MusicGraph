@@ -1,5 +1,6 @@
-﻿import { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import ForceGraph3D from "react-force-graph-3d";
+import * as THREE from "three";
 
 import type { GraphData, GraphLink, GraphNode } from "../types/graph";
 
@@ -30,6 +31,20 @@ const LEGEND_ITEMS = [
   { key: "Genre", label: "流派" },
 ];
 
+function getNodeSize(
+  node: GraphNode,
+  highlightedNodeSet: Set<string>,
+  selectedEntityId: string | null,
+): number {
+  if (highlightedNodeSet.has(node.id)) {
+    return 13;
+  }
+  if (selectedEntityId === node.id) {
+    return 10;
+  }
+  return 6;
+}
+
 export function GraphView(props: GraphViewProps) {
   const {
     graphData,
@@ -42,6 +57,16 @@ export function GraphView(props: GraphViewProps) {
     onNodeClick,
   } = props;
   const graphRef = useRef<any>(null);
+  const labelTextureCache = useRef(new Map<string, THREE.CanvasTexture>());
+
+  useEffect(() => {
+    return () => {
+      for (const texture of labelTextureCache.current.values()) {
+        texture.dispose();
+      }
+      labelTextureCache.current.clear();
+    };
+  }, []);
 
   useEffect(() => {
     if (!graphRef.current || graphData.nodes.length === 0) {
@@ -55,6 +80,66 @@ export function GraphView(props: GraphViewProps) {
 
   const highlightedNodeSet = new Set(highlightedNodeIds);
   const highlightedLinkSet = new Set(highlightedLinkIds);
+
+  function createLabelSprite(node: GraphNode): THREE.Sprite {
+    const isHighlighted = highlightedNodeSet.has(node.id);
+    const isSelected = selectedEntityId === node.id;
+    const radius = getNodeSize(node, highlightedNodeSet, selectedEntityId);
+    const fontSize = isHighlighted ? 44 : isSelected ? 40 : 32;
+    const cacheKey = `${node.id}:${node.label}:${isHighlighted ? "1" : "0"}:${isSelected ? "1" : "0"}`;
+
+    let texture = labelTextureCache.current.get(cacheKey);
+    if (!texture) {
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d");
+      if (!context) {
+        return new THREE.Sprite();
+      }
+
+      context.font = `700 ${fontSize}px Bahnschrift, "Segoe UI", sans-serif`;
+      const textWidth = context.measureText(node.label).width;
+      canvas.width = Math.ceil(textWidth + 18);
+      canvas.height = fontSize + 12;
+
+      const drawContext = canvas.getContext("2d");
+      if (!drawContext) {
+        return new THREE.Sprite();
+      }
+
+      drawContext.font = `700 ${fontSize}px Bahnschrift, "Segoe UI", sans-serif`;
+      drawContext.textAlign = "center";
+      drawContext.textBaseline = "middle";
+      drawContext.lineWidth = isHighlighted ? 8 : 6;
+      drawContext.strokeStyle = "rgba(5, 12, 18, 0.88)";
+      drawContext.fillStyle = isHighlighted
+        ? "#ffe29a"
+        : isSelected
+          ? "#f4fbff"
+          : "#dbeaf7";
+      drawContext.strokeText(node.label, canvas.width / 2, canvas.height / 2);
+      drawContext.fillText(node.label, canvas.width / 2, canvas.height / 2);
+
+      texture = new THREE.CanvasTexture(canvas);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      labelTextureCache.current.set(cacheKey, texture);
+    }
+
+    const sprite = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true,
+        depthWrite: false,
+        depthTest: false,
+      }),
+    );
+    const height = isHighlighted ? 12 : isSelected ? 10.5 : 9;
+    const width = height * (texture.image.width / texture.image.height);
+    sprite.scale.set(width, height, 1);
+    sprite.center.set(0.5, 0);
+    sprite.position.set(0, radius + 2.4, 0);
+    sprite.renderOrder = 10;
+    return sprite;
+  }
 
   if (graphData.nodes.length === 0) {
     return (
@@ -107,14 +192,10 @@ export function GraphView(props: GraphViewProps) {
         }}
         nodeVal={(node: object) => {
           const graphNode = node as GraphNode;
-          if (highlightedNodeSet.has(graphNode.id)) {
-            return 13;
-          }
-          if (selectedEntityId === graphNode.id) {
-            return 10;
-          }
-          return 6;
+          return getNodeSize(graphNode, highlightedNodeSet, selectedEntityId);
         }}
+        nodeThreeObject={(node: object) => createLabelSprite(node as GraphNode)}
+        nodeThreeObjectExtend
         nodeColor={(node: object) => {
           const graphNode = node as GraphNode;
           if (highlightedNodeSet.has(graphNode.id)) {

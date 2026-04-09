@@ -4,7 +4,7 @@ import { fetchEntity, fetchGraph, fetchPath, searchEntities } from "./api/client
 import { DetailPanel } from "./components/DetailPanel";
 import { GraphView } from "./components/GraphView";
 import { SearchPanel } from "./components/SearchPanel";
-import type { EntityDetails, GraphData, SearchItem } from "./types/graph";
+import type { EntityDetails, GraphData, GraphLink, SearchItem } from "./types/graph";
 
 const SAMPLE_ENTITIES: SearchItem[] = [
   {
@@ -45,21 +45,65 @@ const SAMPLE_ENTITIES: SearchItem[] = [
   },
 ];
 
-function mergeGraphData(currentGraph: GraphData, incomingGraph: GraphData): GraphData {
-  const nodeMap = new Map(currentGraph.nodes.map((node) => [node.id, node]));
-  const linkMap = new Map(currentGraph.links.map((link) => [link.id, link]));
-
-  for (const node of incomingGraph.nodes) {
-    nodeMap.set(node.id, node);
+function getLinkEndpointId(endpoint: GraphLink["source"] | { id?: unknown }): string | null {
+  if (typeof endpoint === "string") {
+    return endpoint;
   }
-  for (const link of incomingGraph.links) {
-    linkMap.set(link.id, link);
+  if (
+    endpoint &&
+    typeof endpoint === "object" &&
+    "id" in endpoint &&
+    typeof endpoint.id === "string"
+  ) {
+    return endpoint.id;
+  }
+  return null;
+}
+
+function normalizeGraphData(graph: GraphData): GraphData {
+  const nodeMap = new Map(
+    graph.nodes.map((node) => [
+      node.id,
+      {
+        ...node,
+        meta: { ...node.meta },
+      },
+    ]),
+  );
+  const linkMap = new Map<string, GraphLink>();
+
+  for (const link of graph.links) {
+    const sourceId = getLinkEndpointId(link.source);
+    const targetId = getLinkEndpointId(link.target);
+    if (!sourceId || !targetId || !nodeMap.has(sourceId) || !nodeMap.has(targetId)) {
+      continue;
+    }
+
+    linkMap.set(link.id, {
+      ...link,
+      source: sourceId,
+      target: targetId,
+      meta: { ...link.meta },
+    });
   }
 
   return {
     nodes: [...nodeMap.values()],
     links: [...linkMap.values()],
   };
+}
+
+function mergeGraphData(currentGraph: GraphData, incomingGraph: GraphData): GraphData {
+  const nodeMap = new Map(currentGraph.nodes.map((node) => [node.id, node]));
+
+  for (const node of incomingGraph.nodes) {
+    nodeMap.set(node.id, node);
+  }
+
+  return normalizeGraphData({
+    nodes: [...nodeMap.values()],
+    links: [...currentGraph.links, ...incomingGraph.links],
+  });
 }
 
 export default function App() {

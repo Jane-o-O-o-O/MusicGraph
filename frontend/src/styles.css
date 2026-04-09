@@ -494,6 +494,10 @@ button {
   border-radius: 20px;
 }
 
+.graph-legend {
+  max-width: 620px;
+}
+
 .graph-overlay-top-right {
   top: 4.5rem;
   right: calc(var(--active-right-panel-width) + var(--panel-gap) * 2);
@@ -524,15 +528,19 @@ button {
 }
 
 .legend-list {
-  display: grid;
-  gap: 0.55rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
 }
 
 .legend-item {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto auto auto;
   align-items: center;
-  gap: 0.7rem;
+  gap: 0.55rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(7, 16, 24, 0.34);
 }
 
 .legend-dot {

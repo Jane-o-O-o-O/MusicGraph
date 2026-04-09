@@ -83,7 +83,7 @@ MERGE (qinghuaci:Work {id: 'work_qinghuaci'})
 SET qinghuaci.name = '青花瓷',
     qinghuaci.type = 'Work',
     qinghuaci.aliases = ['Blue and White Porcelain'],
-    qinghuaci.summary = 'One of Jay Chou''s best-known songs.',
+    qinghuaci.summary = 'One of Jay Chou\'s best-known songs.',
     qinghuaci.language = 'zh',
     qinghuaci.release_date = date('2007-11-02'),
     qinghuaci.duration_seconds = 239,
@@ -133,7 +133,7 @@ MERGE (wenrou:Work {id: 'work_wenrou'})
 SET wenrou.name = '温柔',
     wenrou.type = 'Work',
     wenrou.aliases = ['Tenderness'],
-    wenrou.summary = 'One of Mayday''s most recognizable early ballads.',
+    wenrou.summary = 'One of Mayday\'s most recognizable early ballads.',
     wenrou.language = 'zh',
     wenrou.release_date = date('2000-07-07'),
     wenrou.duration_seconds = 269,
@@ -215,46 +215,89 @@ SET ballad.name = 'Ballad',
     ballad.summary = 'Emotion-driven melodic pop ballads.',
     ballad.description = 'Ballad music genre.';
 
+MATCH (jay:Person {id: 'person_jay_chou'}), (qinghuaci:Work {id: 'work_qinghuaci'})
 MERGE (jay)-[:PERFORMED {source: 'seed', confidence: 1.0}]->(qinghuaci);
+MATCH (jay:Person {id: 'person_jay_chou'}), (qinghuaci:Work {id: 'work_qinghuaci'})
 MERGE (jay)-[:COMPOSED {source: 'seed', confidence: 1.0}]->(qinghuaci);
+MATCH (fang:Person {id: 'person_fang_wenshan'}), (qinghuaci:Work {id: 'work_qinghuaci'})
 MERGE (fang)-[:WROTE_LYRICS_FOR {source: 'seed', confidence: 1.0}]->(qinghuaci);
+MATCH (qinghuaci:Work {id: 'work_qinghuaci'}), (womihenmang:Album {id: 'album_womihenmang'})
 MERGE (qinghuaci)-[:IN_ALBUM {source: 'seed', confidence: 1.0}]->(womihenmang);
+MATCH (qinghuaci:Work {id: 'work_qinghuaci'}), (pop:Genre {id: 'genre_pop'})
 MERGE (qinghuaci)-[:HAS_GENRE {source: 'seed', confidence: 1.0}]->(pop);
+MATCH (qinghuaci:Work {id: 'work_qinghuaci'}), (ballad:Genre {id: 'genre_ballad'})
 MERGE (qinghuaci)-[:HAS_GENRE {source: 'seed', confidence: 0.8}]->(ballad);
+MATCH (jay:Person {id: 'person_jay_chou'}), (daoxiang:Work {id: 'work_daoxiang'})
 MERGE (jay)-[:PERFORMED {source: 'seed', confidence: 1.0}]->(daoxiang);
+MATCH (jay:Person {id: 'person_jay_chou'}), (daoxiang:Work {id: 'work_daoxiang'})
 MERGE (jay)-[:COMPOSED {source: 'seed', confidence: 1.0}]->(daoxiang);
+MATCH (fang:Person {id: 'person_fang_wenshan'}), (daoxiang:Work {id: 'work_daoxiang'})
 MERGE (fang)-[:WROTE_LYRICS_FOR {source: 'seed', confidence: 1.0}]->(daoxiang);
+MATCH (daoxiang:Work {id: 'work_daoxiang'}), (mojiezuo:Album {id: 'album_mojiezuo'})
 MERGE (daoxiang)-[:IN_ALBUM {source: 'seed', confidence: 1.0}]->(mojiezuo);
+MATCH (daoxiang:Work {id: 'work_daoxiang'}), (pop:Genre {id: 'genre_pop'})
 MERGE (daoxiang)-[:HAS_GENRE {source: 'seed', confidence: 1.0}]->(pop);
+MATCH (jay:Person {id: 'person_jay_chou'}), (caihong:Work {id: 'work_caihong'})
 MERGE (jay)-[:PERFORMED {source: 'seed', confidence: 1.0}]->(caihong);
+MATCH (jay:Person {id: 'person_jay_chou'}), (caihong:Work {id: 'work_caihong'})
 MERGE (jay)-[:COMPOSED {source: 'seed', confidence: 1.0}]->(caihong);
+MATCH (fang:Person {id: 'person_fang_wenshan'}), (caihong:Work {id: 'work_caihong'})
 MERGE (fang)-[:WROTE_LYRICS_FOR {source: 'seed', confidence: 1.0}]->(caihong);
+MATCH (caihong:Work {id: 'work_caihong'}), (womihenmang:Album {id: 'album_womihenmang'})
 MERGE (caihong)-[:IN_ALBUM {source: 'seed', confidence: 1.0}]->(womihenmang);
+MATCH (caihong:Work {id: 'work_caihong'}), (ballad:Genre {id: 'genre_ballad'})
 MERGE (caihong)-[:HAS_GENRE {source: 'seed', confidence: 1.0}]->(ballad);
+MATCH (jolin:Person {id: 'person_jolin_tsai'}), (prague:Work {id: 'work_bulagguangchang'})
 MERGE (jolin)-[:PERFORMED {source: 'seed', confidence: 1.0}]->(prague);
+MATCH (jay:Person {id: 'person_jay_chou'}), (prague:Work {id: 'work_bulagguangchang'})
 MERGE (jay)-[:COMPOSED {source: 'seed', confidence: 1.0}]->(prague);
+MATCH (fang:Person {id: 'person_fang_wenshan'}), (prague:Work {id: 'work_bulagguangchang'})
 MERGE (fang)-[:WROTE_LYRICS_FOR {source: 'seed', confidence: 1.0}]->(prague);
+MATCH (prague:Work {id: 'work_bulagguangchang'}), (castle:Album {id: 'album_castle'})
 MERGE (prague)-[:IN_ALBUM {source: 'seed', confidence: 1.0}]->(castle);
+MATCH (prague:Work {id: 'work_bulagguangchang'}), (pop:Genre {id: 'genre_pop'})
 MERGE (prague)-[:HAS_GENRE {source: 'seed', confidence: 1.0}]->(pop);
+MATCH (ashin:Person {id: 'person_ashin'}), (mayday:Band {id: 'band_mayday'})
 MERGE (ashin)-[:MEMBER_OF {source: 'seed', confidence: 1.0}]->(mayday);
+MATCH (monster:Person {id: 'person_monster'}), (mayday:Band {id: 'band_mayday'})
 MERGE (monster)-[:MEMBER_OF {source: 'seed', confidence: 1.0}]->(mayday);
+MATCH (masa:Person {id: 'person_masa'}), (mayday:Band {id: 'band_mayday'})
 MERGE (masa)-[:MEMBER_OF {source: 'seed', confidence: 1.0}]->(mayday);
+MATCH (stone:Person {id: 'person_stone'}), (mayday:Band {id: 'band_mayday'})
 MERGE (stone)-[:MEMBER_OF {source: 'seed', confidence: 1.0}]->(mayday);
+MATCH (ming:Person {id: 'person_ming'}), (mayday:Band {id: 'band_mayday'})
 MERGE (ming)-[:MEMBER_OF {source: 'seed', confidence: 1.0}]->(mayday);
+MATCH (mayday:Band {id: 'band_mayday'}), (rock:Genre {id: 'genre_rock'})
 MERGE (mayday)-[:HAS_GENRE {source: 'seed', confidence: 1.0}]->(rock);
+MATCH (mayday:Band {id: 'band_mayday'}), (ballad:Genre {id: 'genre_ballad'})
 MERGE (mayday)-[:HAS_GENRE {source: 'seed', confidence: 0.7}]->(ballad);
+MATCH (ashin:Person {id: 'person_ashin'}), (juejiang:Work {id: 'work_juejiang'})
 MERGE (ashin)-[:PERFORMED {source: 'seed', confidence: 1.0}]->(juejiang);
+MATCH (ashin:Person {id: 'person_ashin'}), (juejiang:Work {id: 'work_juejiang'})
 MERGE (ashin)-[:COMPOSED {source: 'seed', confidence: 1.0}]->(juejiang);
+MATCH (monster:Person {id: 'person_monster'}), (juejiang:Work {id: 'work_juejiang'})
 MERGE (monster)-[:COMPOSED {source: 'seed', confidence: 0.9}]->(juejiang);
+MATCH (juejiang:Work {id: 'work_juejiang'}), (shende:Album {id: 'album_shendehaizidouzaitiaowu'})
 MERGE (juejiang)-[:IN_ALBUM {source: 'seed', confidence: 1.0}]->(shende);
+MATCH (juejiang:Work {id: 'work_juejiang'}), (rock:Genre {id: 'genre_rock'})
 MERGE (juejiang)-[:HAS_GENRE {source: 'seed', confidence: 1.0}]->(rock);
+MATCH (ashin:Person {id: 'person_ashin'}), (wenrou:Work {id: 'work_wenrou'})
 MERGE (ashin)-[:PERFORMED {source: 'seed', confidence: 1.0}]->(wenrou);
+MATCH (ashin:Person {id: 'person_ashin'}), (wenrou:Work {id: 'work_wenrou'})
 MERGE (ashin)-[:COMPOSED {source: 'seed', confidence: 1.0}]->(wenrou);
+MATCH (wenrou:Work {id: 'work_wenrou'}), (shende:Album {id: 'album_shendehaizidouzaitiaowu'})
 MERGE (wenrou)-[:IN_ALBUM {source: 'seed', confidence: 1.0}]->(shende);
+MATCH (wenrou:Work {id: 'work_wenrou'}), (ballad:Genre {id: 'genre_ballad'})
 MERGE (wenrou)-[:HAS_GENRE {source: 'seed', confidence: 1.0}]->(ballad);
+MATCH (wenrou:Work {id: 'work_wenrou'}), (rock:Genre {id: 'genre_rock'})
 MERGE (wenrou)-[:HAS_GENRE {source: 'seed', confidence: 0.7}]->(rock);
+MATCH (ashin:Person {id: 'person_ashin'}), (missingyou:Work {id: 'work_turanhaoxiangni'})
 MERGE (ashin)-[:PERFORMED {source: 'seed', confidence: 1.0}]->(missingyou);
+MATCH (ashin:Person {id: 'person_ashin'}), (missingyou:Work {id: 'work_turanhaoxiangni'})
 MERGE (ashin)-[:COMPOSED {source: 'seed', confidence: 1.0}]->(missingyou);
+MATCH (monster:Person {id: 'person_monster'}), (missingyou:Work {id: 'work_turanhaoxiangni'})
 MERGE (monster)-[:COMPOSED {source: 'seed', confidence: 0.8}]->(missingyou);
+MATCH (missingyou:Work {id: 'work_turanhaoxiangni'}), (secondlife:Album {id: 'album_second_life'})
 MERGE (missingyou)-[:IN_ALBUM {source: 'seed', confidence: 1.0}]->(secondlife);
+MATCH (missingyou:Work {id: 'work_turanhaoxiangni'}), (ballad:Genre {id: 'genre_ballad'})
 MERGE (missingyou)-[:HAS_GENRE {source: 'seed', confidence: 1.0}]->(ballad);

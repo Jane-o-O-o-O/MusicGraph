@@ -11,16 +11,43 @@ if str(BACKEND_DIR) not in sys.path:
 from app.core.config import get_settings
 
 
+def is_backslash_escaped(content: str, index: int) -> bool:
+    backslash_count = 0
+    cursor = index - 1
+    while cursor >= 0 and content[cursor] == "\\":
+        backslash_count += 1
+        cursor -= 1
+    return backslash_count % 2 == 1
+
+
 def split_cypher_statements(content: str) -> list[str]:
     statements: list[str] = []
     buffer: list[str] = []
     in_single_quote = False
     in_double_quote = False
+    index = 0
 
-    for char in content:
+    while index < len(content):
+        char = content[index]
         if char == "'" and not in_double_quote:
+            if in_single_quote and index + 1 < len(content) and content[index + 1] == "'":
+                buffer.extend(["'", "'"])
+                index += 2
+                continue
+            if is_backslash_escaped(content, index):
+                buffer.append(char)
+                index += 1
+                continue
             in_single_quote = not in_single_quote
         elif char == '"' and not in_single_quote:
+            if in_double_quote and index + 1 < len(content) and content[index + 1] == '"':
+                buffer.extend(['"', '"'])
+                index += 2
+                continue
+            if is_backslash_escaped(content, index):
+                buffer.append(char)
+                index += 1
+                continue
             in_double_quote = not in_double_quote
 
         if char == ";" and not in_single_quote and not in_double_quote:
@@ -28,9 +55,11 @@ def split_cypher_statements(content: str) -> list[str]:
             if statement:
                 statements.append(statement)
             buffer = []
+            index += 1
             continue
 
         buffer.append(char)
+        index += 1
 
     tail = "".join(buffer).strip()
     if tail:
@@ -39,7 +68,8 @@ def split_cypher_statements(content: str) -> list[str]:
 
 
 def execute_cypher_file(session, cypher_path: Path) -> None:
-    content = cypher_path.read_text(encoding="utf-8")
+    # Some editors save UTF-8 files with BOM, which Neo4j treats as invalid input.
+    content = cypher_path.read_text(encoding="utf-8-sig")
     statements = split_cypher_statements(content)
 
     for statement in statements:
