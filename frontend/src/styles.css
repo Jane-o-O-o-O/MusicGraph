@@ -81,6 +81,71 @@ button {
   padding: 0;
 }
 
+.graphrag-dock-region {
+  position: absolute;
+  left: calc(var(--left-panel-width) + var(--panel-gap) * 2);
+  right: calc(var(--active-right-panel-width) + var(--panel-gap) * 2);
+  bottom: clamp(2rem, 5vh, 3.5rem);
+  z-index: 4;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.graphrag-dock {
+  width: min(920px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  padding: 1rem;
+  border: 1px solid rgba(126, 176, 214, 0.18);
+  border-radius: 26px;
+  background:
+    linear-gradient(180deg, rgba(11, 20, 31, 0.86), rgba(7, 14, 21, 0.78)),
+    radial-gradient(circle at top, rgba(83, 199, 255, 0.14), transparent 58%);
+  backdrop-filter: blur(24px) saturate(135%);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.32);
+  pointer-events: auto;
+}
+
+.graphrag-dock-header {
+  align-items: flex-start;
+}
+
+.graphrag-dock-note {
+  max-width: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.graphrag-dock-result {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(220px, 1fr);
+  gap: 0.8rem;
+}
+
+.graphrag-dock-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: stretch;
+  gap: 0.75rem;
+}
+
+.graphrag-dock-input {
+  height: 56px;
+  min-height: 56px;
+  padding-top: 0;
+  padding-bottom: 0;
+  line-height: 56px;
+}
+
+.graphrag-dock-button {
+  min-width: 120px;
+  height: 56px;
+  min-height: 56px;
+}
+
 .panel {
   position: absolute;
   top: var(--panel-gap);
@@ -500,18 +565,9 @@ button {
   border-radius: 20px;
 }
 
-.graph-legend {
-  max-width: 620px;
-}
-
 .graph-overlay-top-right {
   top: 4.5rem;
   right: calc(var(--active-right-panel-width) + var(--panel-gap) * 2);
-}
-
-.graph-overlay-bottom-left {
-  left: calc(var(--left-panel-width) + var(--panel-gap) * 2);
-  bottom: var(--panel-gap);
 }
 
 .graph-overlay-title {
@@ -531,33 +587,6 @@ button {
   margin: 0;
   color: var(--muted);
   line-height: 1.5;
-}
-
-.legend-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-}
-
-.legend-item {
-  display: grid;
-  grid-template-columns: auto auto auto;
-  align-items: center;
-  gap: 0.55rem;
-  padding: 0.5rem 0.7rem;
-  border-radius: 999px;
-  background: rgba(7, 16, 24, 0.34);
-}
-
-.legend-dot {
-  width: 0.8rem;
-  height: 0.8rem;
-  border-radius: 999px;
-  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.05);
-}
-
-.legend-item small {
-  color: var(--muted);
 }
 
 .meta-row {
@@ -637,14 +666,15 @@ button {
     justify-content: center;
   }
 
+  .graphrag-dock-region {
+    left: 1rem;
+    right: 1rem;
+    bottom: 1rem;
+  }
+
   .graph-overlay-top-right {
     top: auto;
     right: 1rem;
-    bottom: calc(38vh + 2rem);
-  }
-
-  .graph-overlay-bottom-left {
-    left: 1rem;
     bottom: calc(38vh + 2rem);
   }
 }
@@ -680,6 +710,29 @@ button {
     bottom: calc(34vh + 1rem);
     left: 0.75rem;
     right: 0.75rem;
+  }
+
+  .graphrag-dock-region {
+    left: 0.75rem;
+    right: 0.75rem;
+    bottom: 0.75rem;
+  }
+
+  .graphrag-dock {
+    border-radius: 22px;
+  }
+
+  .graphrag-dock-note {
+    white-space: normal;
+  }
+
+  .graphrag-dock-result,
+  .graphrag-dock-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .graphrag-dock-button {
+    min-height: 0;
   }
 
   .graph-overlay {

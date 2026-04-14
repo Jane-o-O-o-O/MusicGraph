@@ -1,7 +1,8 @@
 import { startTransition, useDeferredValue, useEffect, useState } from "react";
 
-import { fetchEntity, fetchGraph, fetchPath, queryGraphRag, searchEntities } from "./api/client";
+import { fetchEntity, fetchGraph, queryGraphRag, searchEntities } from "./api/client";
 import { DetailPanel } from "./components/DetailPanel";
+import { GraphRagDock } from "./components/GraphRagDock";
 import { GraphView } from "./components/GraphView";
 import { SearchPanel } from "./components/SearchPanel";
 import type {
@@ -120,11 +121,8 @@ export default function App() {
   const [graphData, setGraphData] = useState<GraphData>({ nodes: [], links: [] });
   const [searchLoading, setSearchLoading] = useState(false);
   const [graphLoading, setGraphLoading] = useState(false);
-  const [pathLoading, setPathLoading] = useState(false);
   const [graphRagLoading, setGraphRagLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [pathFrom, setPathFrom] = useState("person_jay_chou");
-  const [pathTo, setPathTo] = useState("person_fang_wenshan");
   const [graphRagQuestion, setGraphRagQuestion] = useState("");
   const [graphRagResult, setGraphRagResult] = useState<GraphRagResponse | null>(null);
   const [expandedNodeIds, setExpandedNodeIds] = useState<string[]>([]);
@@ -181,7 +179,6 @@ export default function App() {
   }
 
   async function handleSelect(item: SearchItem) {
-    setPathFrom(item.id);
     await loadEntityContext(item.id, true, true);
   }
 
@@ -192,7 +189,6 @@ export default function App() {
       setSelectedEntity(entity);
       setDetailVisible(true);
       setHighlightedNodeIds([nodeId]);
-      setPathFrom(nodeId);
 
       if (!expandedNodeIds.includes(nodeId)) {
         setGraphLoading(true);
@@ -206,27 +202,6 @@ export default function App() {
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Failed to expand node.");
       setGraphLoading(false);
-    }
-  }
-
-  async function handleHighlightPath() {
-    if (!pathFrom.trim() || !pathTo.trim()) {
-      return;
-    }
-
-    setErrorMessage(null);
-    setPathLoading(true);
-    try {
-      const pathGraph = await fetchPath(pathFrom.trim(), pathTo.trim());
-      startTransition(() => {
-        setHighlightedNodeIds(pathGraph.nodes.map((node) => node.id));
-        setHighlightedLinkIds(pathGraph.links.map((link) => link.id));
-        setGraphData((current) => mergeGraphData(current, pathGraph));
-      });
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Failed to load path.");
-    } finally {
-      setPathLoading(false);
     }
   }
 
@@ -261,25 +236,14 @@ export default function App() {
     }
   }
 
-  const typeCounts: Record<string, number> = {};
-  for (const node of graphData.nodes) {
-    typeCounts[node.type] = (typeCounts[node.type] ?? 0) + 1;
-  }
-
   return (
     <div className={`app-shell ${detailVisible ? "detail-open" : ""}`}>
       <div className="backdrop" />
       <SearchPanel
         query={query}
         entityType={entityType}
-        pathFrom={pathFrom}
-        pathTo={pathTo}
-        graphRagQuestion={graphRagQuestion}
         loading={searchLoading}
-        pathLoading={pathLoading}
-        graphRagLoading={graphRagLoading}
         results={results}
-        graphRagResult={graphRagResult}
         selectedEntityId={selectedEntity?.id ?? null}
         sampleItems={SAMPLE_ENTITIES}
         graphNodeCount={graphData.nodes.length}
@@ -287,21 +251,12 @@ export default function App() {
         expandedCount={expandedNodeIds.length}
         onQueryChange={setQuery}
         onEntityTypeChange={setEntityType}
-        onPathFromChange={setPathFrom}
-        onPathToChange={setPathTo}
-        onGraphRagQuestionChange={setGraphRagQuestion}
         onSearch={handleSearch}
         onSearchKeyDown={() => {
           void handleSearch();
         }}
         onSelect={(item) => {
           void handleSelect(item);
-        }}
-        onHighlightPath={() => {
-          void handleHighlightPath();
-        }}
-        onGraphRagQuery={() => {
-          void handleGraphRagQuery();
         }}
       />
 
@@ -313,12 +268,22 @@ export default function App() {
           highlightedLinkIds={highlightedLinkIds}
           selectedEntityId={selectedEntity?.id ?? null}
           expandedCount={expandedNodeIds.length}
-          typeCounts={typeCounts}
           onNodeClick={(node) => {
             void handleNodeClick(node.id);
           }}
         />
       </main>
+
+      <GraphRagDock
+        question={graphRagQuestion}
+        loading={graphRagLoading}
+        result={graphRagResult}
+        selectedEntityId={selectedEntity?.id ?? null}
+        onQuestionChange={setGraphRagQuestion}
+        onSubmit={() => {
+          void handleGraphRagQuery();
+        }}
+      />
 
       <DetailPanel entity={selectedEntity} errorMessage={errorMessage} visible={detailVisible} />
     </div>

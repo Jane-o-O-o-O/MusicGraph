@@ -1,16 +1,10 @@
-import type { GraphRagResponse, SearchItem } from "../types/graph";
+import type { SearchItem } from "../types/graph";
 
 interface SearchPanelProps {
   query: string;
   entityType: string;
-  pathFrom: string;
-  pathTo: string;
-  graphRagQuestion: string;
   loading: boolean;
-  pathLoading: boolean;
-  graphRagLoading: boolean;
   results: SearchItem[];
-  graphRagResult: GraphRagResponse | null;
   selectedEntityId: string | null;
   sampleItems: SearchItem[];
   graphNodeCount: number;
@@ -18,14 +12,9 @@ interface SearchPanelProps {
   expandedCount: number;
   onQueryChange: (value: string) => void;
   onEntityTypeChange: (value: string) => void;
-  onPathFromChange: (value: string) => void;
-  onPathToChange: (value: string) => void;
-  onGraphRagQuestionChange: (value: string) => void;
   onSearch: () => void;
   onSearchKeyDown: () => void;
   onSelect: (item: SearchItem) => void;
-  onHighlightPath: () => void;
-  onGraphRagQuery: () => void;
 }
 
 const ENTITY_TYPES = ["", "Person", "Band", "Work", "Album", "Genre"];
@@ -34,14 +23,8 @@ export function SearchPanel(props: SearchPanelProps) {
   const {
     query,
     entityType,
-    pathFrom,
-    pathTo,
-    graphRagQuestion,
     loading,
-    pathLoading,
-    graphRagLoading,
     results,
-    graphRagResult,
     selectedEntityId,
     sampleItems,
     graphNodeCount,
@@ -49,14 +32,9 @@ export function SearchPanel(props: SearchPanelProps) {
     expandedCount,
     onQueryChange,
     onEntityTypeChange,
-    onPathFromChange,
-    onPathToChange,
-    onGraphRagQuestionChange,
     onSearch,
     onSearchKeyDown,
     onSelect,
-    onHighlightPath,
-    onGraphRagQuery,
   } = props;
 
   return (
@@ -65,7 +43,7 @@ export function SearchPanel(props: SearchPanelProps) {
         <p className="eyebrow">Music Explorer</p>
         <h1>音乐关系图谱</h1>
         <p className="panel-copy">
-          搜索人物、乐团、作品与专辑，在 3D 空间中逐层展开音乐世界的关系网络。
+          搜索人物、乐团、作品与专辑，在 3D 空间里逐层展开音乐世界的关系网络。
         </p>
       </div>
 
@@ -151,42 +129,6 @@ export function SearchPanel(props: SearchPanelProps) {
 
       <section className="stack glass-block">
         <div className="section-title">
-          <h2>GraphRAG 问答</h2>
-          <span>{selectedEntityId ? "含当前焦点" : "全图检索"}</span>
-        </div>
-        <textarea
-          className="text-input text-area-input"
-          placeholder="例如：周杰伦和方文山有什么关系？"
-          value={graphRagQuestion}
-          onChange={(event) => onGraphRagQuestionChange(event.target.value)}
-        />
-        <button className="secondary-button" onClick={onGraphRagQuery} disabled={graphRagLoading}>
-          {graphRagLoading ? "问答生成中" : "提问"}
-        </button>
-        {graphRagResult ? (
-          <div className="stack">
-            <div className="status-card">
-              <strong>回答</strong>
-              <p className="panel-note">{graphRagResult.answer}</p>
-            </div>
-            <div className="status-card status-card-muted">
-              <strong>命中实体</strong>
-              <p className="panel-note">
-                {graphRagResult.matched_entities.length > 0
-                  ? graphRagResult.matched_entities.map((item) => item.name).join(" / ")
-                  : "暂无"}
-              </p>
-            </div>
-          </div>
-        ) : (
-          <p className="panel-note">
-            问答会自动基于图谱检索相关实体、关系和路径，并把相关子图并入当前视图。
-          </p>
-        )}
-      </section>
-
-      <section className="stack glass-block">
-        <div className="section-title">
           <h2>搜索结果</h2>
           <span>{results.length}</span>
         </div>
@@ -209,31 +151,6 @@ export function SearchPanel(props: SearchPanelProps) {
             ))
           )}
         </div>
-      </section>
-
-      <section className="stack glass-block">
-        <div className="section-title">
-          <h2>路径聚焦</h2>
-          <span>2 Nodes</span>
-        </div>
-        <input
-          className="text-input"
-          placeholder="起点实体 id"
-          value={pathFrom}
-          onChange={(event) => onPathFromChange(event.target.value)}
-        />
-        <input
-          className="text-input"
-          placeholder="终点实体 id"
-          value={pathTo}
-          onChange={(event) => onPathToChange(event.target.value)}
-        />
-        <button className="secondary-button" onClick={onHighlightPath} disabled={pathLoading}>
-          {pathLoading ? "路径计算中" : "高亮路径"}
-        </button>
-        <p className="panel-note">
-          点击图中节点会自动把它设为当前聚焦实体，并在首次点击时展开一跳邻居。
-        </p>
       </section>
     </aside>
   );

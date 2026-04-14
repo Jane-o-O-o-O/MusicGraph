@@ -2,7 +2,6 @@ import type {
   EntityDetails,
   GraphData,
   GraphRagResponse,
-  PathResponse,
   SearchItem,
 } from "../types/graph";
 
@@ -52,11 +51,6 @@ export async function fetchEntity(entityId: string): Promise<EntityDetails> {
 
 export async function fetchGraph(entityId: string, depth = 1): Promise<GraphData> {
   return fetchJson<GraphData>(`/graph/${entityId}?depth=${depth}`);
-}
-
-export async function fetchPath(sourceId: string, targetId: string): Promise<PathResponse> {
-  const params = new URLSearchParams({ from: sourceId, to: targetId });
-  return fetchJson<PathResponse>(`/path?${params.toString()}`);
 }
 
 export async function queryGraphRag(

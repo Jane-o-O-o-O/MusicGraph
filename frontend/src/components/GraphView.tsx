@@ -11,38 +11,65 @@ interface GraphViewProps {
   highlightedLinkIds: string[];
   selectedEntityId: string | null;
   expandedCount: number;
-  typeCounts: Record<string, number>;
   onNodeClick: (node: GraphNode) => void;
 }
 
 const NODE_COLORS: Record<string, string> = {
-  Person: "#53c7ff",
-  Band: "#ff9d4d",
-  Work: "#4ce1a2",
-  Album: "#f4d06f",
-  Genre: "#ff6b6b",
+  Person: "#6fd3ff",
+  Band: "#ffb56b",
+  Work: "#7df0c4",
+  Album: "#ffe08b",
+  Genre: "#ff8f8f",
 };
 
-const LEGEND_ITEMS = [
-  { key: "Person", label: "人物" },
-  { key: "Band", label: "乐团" },
-  { key: "Work", label: "作品" },
-  { key: "Album", label: "专辑" },
-  { key: "Genre", label: "流派" },
-];
-
-function getNodeSize(
+function getNodeRadius(
   node: GraphNode,
   highlightedNodeSet: Set<string>,
   selectedEntityId: string | null,
 ): number {
   if (highlightedNodeSet.has(node.id)) {
-    return 13;
+    return 8.5;
   }
   if (selectedEntityId === node.id) {
-    return 10;
+    return 7.25;
   }
-  return 6;
+  return 4.2;
+}
+
+function createTextTexture(
+  text: string,
+  color: string,
+  fontSize: number,
+  strokeWidth: number,
+): THREE.CanvasTexture {
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+  if (!context) {
+    return new THREE.CanvasTexture(canvas);
+  }
+
+  context.font = `700 ${fontSize}px Bahnschrift, "Segoe UI", sans-serif`;
+  const textWidth = context.measureText(text).width;
+  canvas.width = Math.ceil(textWidth + 24);
+  canvas.height = fontSize + 18;
+
+  const drawContext = canvas.getContext("2d");
+  if (!drawContext) {
+    return new THREE.CanvasTexture(canvas);
+  }
+
+  drawContext.font = `700 ${fontSize}px Bahnschrift, "Segoe UI", sans-serif`;
+  drawContext.textAlign = "center";
+  drawContext.textBaseline = "middle";
+  drawContext.lineWidth = strokeWidth;
+  drawContext.strokeStyle = "rgba(6, 13, 20, 0.9)";
+  drawContext.fillStyle = color;
+  drawContext.strokeText(text, canvas.width / 2, canvas.height / 2);
+  drawContext.fillText(text, canvas.width / 2, canvas.height / 2);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
 }
 
 export function GraphView(props: GraphViewProps) {
@@ -53,11 +80,14 @@ export function GraphView(props: GraphViewProps) {
     highlightedLinkIds,
     selectedEntityId,
     expandedCount,
-    typeCounts,
     onNodeClick,
   } = props;
+
   const graphRef = useRef<any>(null);
   const labelTextureCache = useRef(new Map<string, THREE.CanvasTexture>());
+  const linkMaterialCache = useRef(
+    new Map<string, THREE.MeshBasicMaterial | THREE.LineBasicMaterial>(),
+  );
 
   useEffect(() => {
     return () => {
@@ -65,6 +95,11 @@ export function GraphView(props: GraphViewProps) {
         texture.dispose();
       }
       labelTextureCache.current.clear();
+
+      for (const material of linkMaterialCache.current.values()) {
+        material.dispose();
+      }
+      linkMaterialCache.current.clear();
     };
   }, []);
 
@@ -73,79 +108,112 @@ export function GraphView(props: GraphViewProps) {
       return;
     }
 
-    graphRef.current.d3Force("charge")?.strength(-260);
-    graphRef.current.d3VelocityDecay?.(0.28);
-    graphRef.current.zoomToFit(500, 90);
+    graphRef.current.d3Force("charge")?.strength(-220);
+    graphRef.current.d3VelocityDecay?.(0.34);
+    graphRef.current.zoomToFit(500, 100);
   }, [graphData]);
 
   const highlightedNodeSet = new Set(highlightedNodeIds);
   const highlightedLinkSet = new Set(highlightedLinkIds);
 
-  function createLabelSprite(node: GraphNode): THREE.Sprite {
-    const isHighlighted = highlightedNodeSet.has(node.id);
-    const isSelected = selectedEntityId === node.id;
-    const radius = getNodeSize(node, highlightedNodeSet, selectedEntityId);
-    const fontSize = isHighlighted ? 44 : isSelected ? 40 : 32;
-    const cacheKey = `${node.id}:${node.label}:${isHighlighted ? "1" : "0"}:${isSelected ? "1" : "0"}`;
-
-    let texture = labelTextureCache.current.get(cacheKey);
-    if (!texture) {
-      const canvas = document.createElement("canvas");
-      const context = canvas.getContext("2d");
-      if (!context) {
-        return new THREE.Sprite();
-      }
-
-      context.font = `700 ${fontSize}px Bahnschrift, "Segoe UI", sans-serif`;
-      const textWidth = context.measureText(node.label).width;
-      canvas.width = Math.ceil(textWidth + 18);
-      canvas.height = fontSize + 12;
-
-      const drawContext = canvas.getContext("2d");
-      if (!drawContext) {
-        return new THREE.Sprite();
-      }
-
-      drawContext.font = `700 ${fontSize}px Bahnschrift, "Segoe UI", sans-serif`;
-      drawContext.textAlign = "center";
-      drawContext.textBaseline = "middle";
-      drawContext.lineWidth = isHighlighted ? 8 : 6;
-      drawContext.strokeStyle = "rgba(5, 12, 18, 0.88)";
-      drawContext.fillStyle = isHighlighted
-        ? "#ffe29a"
-        : isSelected
-          ? "#f4fbff"
-          : "#dbeaf7";
-      drawContext.strokeText(node.label, canvas.width / 2, canvas.height / 2);
-      drawContext.fillText(node.label, canvas.width / 2, canvas.height / 2);
-
-      texture = new THREE.CanvasTexture(canvas);
-      texture.colorSpace = THREE.SRGBColorSpace;
-      labelTextureCache.current.set(cacheKey, texture);
+  function getLinkMaterial(link: GraphLink): THREE.MeshBasicMaterial | THREE.LineBasicMaterial {
+    const isHighlighted = highlightedLinkSet.has(link.id);
+    const cacheKey = isHighlighted ? "highlight" : "normal";
+    const cached = linkMaterialCache.current.get(cacheKey);
+    if (cached) {
+      return cached;
     }
 
-    const sprite = new THREE.Sprite(
+    const material =
+      linkWidth(link) > 0
+        ? new THREE.MeshBasicMaterial({
+            color: isHighlighted ? "#ffd38a" : "#74c7ff",
+            transparent: true,
+            opacity: isHighlighted ? 0.92 : 0.18,
+          })
+        : new THREE.LineBasicMaterial({
+            color: isHighlighted ? "#ffd38a" : "#74c7ff",
+            transparent: true,
+            opacity: isHighlighted ? 0.92 : 0.18,
+          });
+
+    linkMaterialCache.current.set(cacheKey, material);
+    return material;
+  }
+
+  function createNodeObject(node: GraphNode): THREE.Object3D {
+    const isHighlighted = highlightedNodeSet.has(node.id);
+    const isSelected = selectedEntityId === node.id;
+    const radius = getNodeRadius(node, highlightedNodeSet, selectedEntityId);
+    const color = NODE_COLORS[node.type] ?? "#d7e5f4";
+
+    const group = new THREE.Group();
+
+    const haloMaterial = new THREE.MeshBasicMaterial({
+      color,
+      transparent: true,
+      opacity: isHighlighted ? 0.22 : isSelected ? 0.16 : 0.08,
+      depthWrite: false,
+    });
+    const halo = new THREE.Mesh(
+      new THREE.SphereGeometry(radius * (isHighlighted ? 2.2 : 1.95), 20, 20),
+      haloMaterial,
+    );
+    group.add(halo);
+
+    const coreMaterial = new THREE.MeshPhongMaterial({
+      color,
+      emissive: new THREE.Color(color).multiplyScalar(isHighlighted ? 0.5 : 0.28),
+      shininess: 90,
+      transparent: true,
+      opacity: isHighlighted ? 1 : 0.96,
+    });
+    const core = new THREE.Mesh(new THREE.SphereGeometry(radius, 24, 24), coreMaterial);
+    group.add(core);
+
+    const fontSize = isHighlighted ? 34 : isSelected ? 28 : 22;
+    const strokeWidth = isHighlighted ? 8 : isSelected ? 6 : 5;
+    const textureKey = `${node.id}:${node.label}:${isHighlighted ? "1" : "0"}:${isSelected ? "1" : "0"}`;
+    let texture = labelTextureCache.current.get(textureKey);
+    if (!texture) {
+      texture = createTextTexture(
+        node.label,
+        isHighlighted ? "#fff0c3" : isSelected ? "#eef7ff" : "#a9bfd3",
+        fontSize,
+        strokeWidth,
+      );
+      labelTextureCache.current.set(textureKey, texture);
+    }
+
+    const label = new THREE.Sprite(
       new THREE.SpriteMaterial({
         map: texture,
         transparent: true,
         depthWrite: false,
         depthTest: false,
+        opacity: isHighlighted ? 1 : isSelected ? 0.96 : 0.72,
       }),
     );
-    const height = isHighlighted ? 12 : isSelected ? 10.5 : 9;
+    const height = isHighlighted ? 7.2 : isSelected ? 6.2 : 4.9;
     const width = height * (texture.image.width / texture.image.height);
-    sprite.scale.set(width, height, 1);
-    sprite.center.set(0.5, 0);
-    sprite.position.set(0, radius + 2.4, 0);
-    sprite.renderOrder = 10;
-    return sprite;
+    label.scale.set(width, height, 1);
+    label.center.set(0.5, 0);
+    label.position.set(0, radius + 1.45, 0);
+    label.renderOrder = 10;
+    group.add(label);
+
+    return group;
+  }
+
+  function linkWidth(link: GraphLink): number {
+    return highlightedLinkSet.has(link.id) ? 2.4 : 0;
   }
 
   if (graphData.nodes.length === 0) {
     return (
       <div className="graph-empty">
         <h2>等待首个 3D 子图</h2>
-        <p>从左侧快速开始，或直接搜索实体后把它加载进图谱舞台。</p>
+        <p>从左侧快速开始，或者直接搜索实体后把它加载进图谱舞台。</p>
       </div>
     );
   }
@@ -162,23 +230,7 @@ export function GraphView(props: GraphViewProps) {
       <div className="graph-overlay graph-overlay-top-right">
         <div className="graph-overlay-title">当前焦点</div>
         <strong>{selectedEntityId ?? "尚未选择"}</strong>
-        <p>单击节点聚焦相机并继续展开，拖拽可旋转，滚轮可缩放。</p>
-      </div>
-
-      <div className="graph-overlay graph-overlay-bottom-left graph-legend">
-        <div className="graph-overlay-title">图例</div>
-        <div className="legend-list">
-          {LEGEND_ITEMS.map((item) => (
-            <div className="legend-item" key={item.key}>
-              <span
-                className="legend-dot"
-                style={{ backgroundColor: NODE_COLORS[item.key] ?? "#d7e5f4" }}
-              />
-              <strong>{item.label}</strong>
-              <small>{typeCounts[item.key] ?? 0}</small>
-            </div>
-          ))}
-        </div>
+        <p>亮色只保留给焦点和命中关系，其余节点与连线退后，画面会干净很多。</p>
       </div>
 
       <ForceGraph3D
@@ -192,43 +244,25 @@ export function GraphView(props: GraphViewProps) {
         }}
         nodeVal={(node: object) => {
           const graphNode = node as GraphNode;
-          return getNodeSize(graphNode, highlightedNodeSet, selectedEntityId);
+          return getNodeRadius(graphNode, highlightedNodeSet, selectedEntityId);
         }}
-        nodeThreeObject={(node: object) => createLabelSprite(node as GraphNode)}
-        nodeThreeObjectExtend
-        nodeColor={(node: object) => {
-          const graphNode = node as GraphNode;
-          if (highlightedNodeSet.has(graphNode.id)) {
-            return "#ffd166";
-          }
-          return NODE_COLORS[graphNode.type] ?? "#d7e5f4";
-        }}
-        nodeOpacity={0.95}
+        nodeThreeObject={(node: object) => createNodeObject(node as GraphNode)}
+        nodeColor={() => "#000000"}
+        nodeOpacity={0}
         linkLabel={(link: object) => {
           const graphLink = link as GraphLink;
           return graphLink.type;
         }}
         linkColor={(link: object) => {
           const graphLink = link as GraphLink;
-          return highlightedLinkSet.has(graphLink.id) ? "#ff8a3d" : "rgba(120, 183, 255, 0.44)";
+          return highlightedLinkSet.has(graphLink.id) ? "#ffd38a" : "rgba(116, 199, 255, 0.16)";
         }}
-        linkWidth={(link: object) => {
-          const graphLink = link as GraphLink;
-          return highlightedLinkSet.has(graphLink.id) ? 4.6 : 1.4;
-        }}
-        linkOpacity={0.8}
-        linkCurvature={0.08}
-        linkDirectionalParticles={(link: object) => {
-          const graphLink = link as GraphLink;
-          return highlightedLinkSet.has(graphLink.id) ? 4 : 0;
-        }}
-        linkDirectionalParticleWidth={3.2}
-        linkDirectionalParticleSpeed={0.006}
-        linkDirectionalArrowLength={(link: object) => {
-          const graphLink = link as GraphLink;
-          return highlightedLinkSet.has(graphLink.id) ? 4 : 0;
-        }}
-        linkDirectionalArrowColor={() => "#ffd166"}
+        linkMaterial={(link: object) => getLinkMaterial(link as GraphLink)}
+        linkWidth={(link: object) => linkWidth(link as GraphLink)}
+        linkOpacity={1}
+        linkCurvature={0.04}
+        linkDirectionalParticles={0}
+        linkDirectionalArrowLength={0}
         cooldownTicks={90}
         warmupTicks={60}
         onNodeClick={(node: object) => {
