@@ -315,6 +315,12 @@ button {
   box-shadow: 0 0 0 4px rgba(83, 199, 255, 0.12);
 }
 
+.text-area-input {
+  min-height: 96px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
 .primary-button,
 .secondary-button {
   border: none;
@@ -576,6 +582,11 @@ button {
   padding: 1rem;
   color: #d5e2f0;
   line-height: 1.55;
+}
+
+.status-card strong {
+  display: block;
+  margin-bottom: 0.35rem;
 }
 
 .status-card-muted {

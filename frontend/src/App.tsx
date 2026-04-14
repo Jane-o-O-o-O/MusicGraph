@@ -1,10 +1,16 @@
 import { startTransition, useDeferredValue, useEffect, useState } from "react";
 
-import { fetchEntity, fetchGraph, fetchPath, searchEntities } from "./api/client";
+import { fetchEntity, fetchGraph, fetchPath, queryGraphRag, searchEntities } from "./api/client";
 import { DetailPanel } from "./components/DetailPanel";
 import { GraphView } from "./components/GraphView";
 import { SearchPanel } from "./components/SearchPanel";
-import type { EntityDetails, GraphData, GraphLink, SearchItem } from "./types/graph";
+import type {
+  EntityDetails,
+  GraphData,
+  GraphLink,
+  GraphRagResponse,
+  SearchItem,
+} from "./types/graph";
 
 const SAMPLE_ENTITIES: SearchItem[] = [
   {
@@ -115,9 +121,12 @@ export default function App() {
   const [searchLoading, setSearchLoading] = useState(false);
   const [graphLoading, setGraphLoading] = useState(false);
   const [pathLoading, setPathLoading] = useState(false);
+  const [graphRagLoading, setGraphRagLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [pathFrom, setPathFrom] = useState("person_jay_chou");
   const [pathTo, setPathTo] = useState("person_fang_wenshan");
+  const [graphRagQuestion, setGraphRagQuestion] = useState("");
+  const [graphRagResult, setGraphRagResult] = useState<GraphRagResponse | null>(null);
   const [expandedNodeIds, setExpandedNodeIds] = useState<string[]>([]);
   const [highlightedNodeIds, setHighlightedNodeIds] = useState<string[]>([]);
   const [highlightedLinkIds, setHighlightedLinkIds] = useState<string[]>([]);
@@ -221,6 +230,37 @@ export default function App() {
     }
   }
 
+  async function handleGraphRagQuery() {
+    if (!graphRagQuestion.trim()) {
+      return;
+    }
+
+    setErrorMessage(null);
+    setGraphRagLoading(true);
+    try {
+      const entityIds = selectedEntity ? [selectedEntity.id] : [];
+      const response = await queryGraphRag(graphRagQuestion.trim(), entityIds);
+      startTransition(() => {
+        setGraphRagResult(response);
+        setHighlightedNodeIds(response.matched_entities.map((item) => item.id));
+        setHighlightedLinkIds(response.graph.links.map((link) => link.id));
+        setExpandedNodeIds((current) =>
+          Array.from(
+            new Set([
+              ...current,
+              ...response.matched_entities.map((item) => item.id),
+            ]),
+          ),
+        );
+        setGraphData((current) => mergeGraphData(current, response.graph));
+      });
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "GraphRAG query failed.");
+    } finally {
+      setGraphRagLoading(false);
+    }
+  }
+
   const typeCounts: Record<string, number> = {};
   for (const node of graphData.nodes) {
     typeCounts[node.type] = (typeCounts[node.type] ?? 0) + 1;
@@ -234,9 +274,12 @@ export default function App() {
         entityType={entityType}
         pathFrom={pathFrom}
         pathTo={pathTo}
+        graphRagQuestion={graphRagQuestion}
         loading={searchLoading}
         pathLoading={pathLoading}
+        graphRagLoading={graphRagLoading}
         results={results}
+        graphRagResult={graphRagResult}
         selectedEntityId={selectedEntity?.id ?? null}
         sampleItems={SAMPLE_ENTITIES}
         graphNodeCount={graphData.nodes.length}
@@ -246,6 +289,7 @@ export default function App() {
         onEntityTypeChange={setEntityType}
         onPathFromChange={setPathFrom}
         onPathToChange={setPathTo}
+        onGraphRagQuestionChange={setGraphRagQuestion}
         onSearch={handleSearch}
         onSearchKeyDown={() => {
           void handleSearch();
@@ -255,6 +299,9 @@ export default function App() {
         }}
         onHighlightPath={() => {
           void handleHighlightPath();
+        }}
+        onGraphRagQuery={() => {
+          void handleGraphRagQuery();
         }}
       />
 

@@ -8,6 +8,7 @@ from app.schemas.graph import (
     PathResponse,
     SearchResponse,
 )
+from app.schemas.graphrag import GraphRagQueryRequest, GraphRagResponse
 from app.services.graph_service import GraphService
 
 router = APIRouter(tags=["graph"])
@@ -70,3 +71,20 @@ def get_path(
     if not path.nodes:
         raise HTTPException(status_code=404, detail="Path not found.")
     return PathResponse(**path.model_dump(), source_id=from_id, target_id=to_id)
+
+
+@router.post("/graphrag/query", response_model=GraphRagResponse)
+def query_graphrag(
+    payload: GraphRagQueryRequest,
+    service: GraphService = Depends(get_graph_service),
+) -> GraphRagResponse:
+    question = payload.question.strip()
+    if not question:
+        raise HTTPException(status_code=400, detail="Question cannot be empty.")
+
+    return service.answer_question(
+        question,
+        entity_ids=payload.entity_ids,
+        depth=payload.depth,
+        max_entities=payload.max_entities,
+    )

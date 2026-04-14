@@ -1,9 +1,12 @@
-﻿from collections import deque
+from collections import deque
 from typing import TYPE_CHECKING
 
 from app.core.config import Settings
 from app.data.mock_graph import MOCK_NODES, MOCK_RELATIONSHIPS
 from app.schemas.graph import EntityDetails, GraphLink, GraphNode, GraphResponse, SearchItem
+from app.schemas.graphrag import GraphRagResponse
+from app.services.graphrag import GraphRagEngine
+from app.services.llm import LlmConfig, RemoteLlmService
 
 if TYPE_CHECKING:
     from app.db.neo4j import Neo4jGraphRepository
@@ -175,6 +178,16 @@ class GraphService:
         self._mock_repository = MockGraphRepository()
         self._neo4j_repository: Neo4jGraphRepository | None = None
         self._using_mock_data = settings.use_mock_data
+        llm_config = None
+        if settings.llm_api_key and settings.llm_base_url and settings.llm_model:
+            llm_config = LlmConfig(
+                provider=settings.llm_provider or "remote-llm",
+                api_key=settings.llm_api_key,
+                base_url=settings.llm_base_url,
+                model=settings.llm_model,
+            )
+        self._remote_llm = RemoteLlmService(llm_config)
+        self._graphrag_engine = GraphRagEngine(self, self._remote_llm)
 
     @property
     def using_mock_data(self) -> bool:
@@ -248,6 +261,21 @@ class GraphService:
         if self._neo4j_repository is None:
             return GraphResponse()
         return self._neo4j_repository.get_path(source_id, target_id, max_hops=6)
+
+    def answer_question(
+        self,
+        question: str,
+        *,
+        entity_ids: list[str] | None = None,
+        depth: int = 2,
+        max_entities: int = 5,
+    ) -> GraphRagResponse:
+        return self._graphrag_engine.answer_question(
+            question,
+            entity_ids=entity_ids,
+            depth=depth,
+            max_entities=max_entities,
+        )
 
     @property
     def _repository(self):

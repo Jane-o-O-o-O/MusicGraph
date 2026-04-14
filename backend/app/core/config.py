@@ -46,6 +46,22 @@ class Settings(BaseSettings):
         default="neo4j",
         validation_alias="MUSICGRAPH_NEO4J_DATABASE",
     )
+    llm_provider: str | None = Field(
+        default=None,
+        validation_alias="MUSICGRAPH_LLM_PROVIDER",
+    )
+    llm_api_key: str | None = Field(
+        default=None,
+        validation_alias="MUSICGRAPH_LLM_API_KEY",
+    )
+    llm_base_url: str | None = Field(
+        default=None,
+        validation_alias="MUSICGRAPH_LLM_BASE_URL",
+    )
+    llm_model: str | None = Field(
+        default=None,
+        validation_alias="MUSICGRAPH_LLM_MODEL",
+    )
 
     model_config = SettingsConfigDict(
         env_file=(BACKEND_DIR / ".env", REPO_ROOT / ".env"),

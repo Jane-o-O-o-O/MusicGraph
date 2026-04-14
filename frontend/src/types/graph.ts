@@ -41,3 +41,17 @@ export interface PathResponse extends GraphData {
   source_id: string;
   target_id: string;
 }
+
+export interface GraphRagEvidence {
+  type: string;
+  text: string;
+}
+
+export interface GraphRagResponse {
+  question: string;
+  answer: string;
+  mode: string;
+  matched_entities: SearchItem[];
+  evidence: GraphRagEvidence[];
+  graph: GraphData;
+}
