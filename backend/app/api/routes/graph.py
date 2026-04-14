@@ -13,7 +13,14 @@ from app.services.graph_service import GraphService
 
 router = APIRouter(tags=["graph"])
 
-ENTITY_TYPES = ["Person", "Band", "Work", "Album", "Genre"]
+# 音乐图谱实体类型
+MUSIC_ENTITY_TYPES = ["Person", "Band", "Work", "Album", "Genre"]
+
+# 三国演义实体类型
+ROMANCE_ENTITY_TYPES = ["Person", "Location", "Event", "Title"]
+
+# 通用实体类型（合并两者）
+ENTITY_TYPES = list(set(MUSIC_ENTITY_TYPES + ROMANCE_ENTITY_TYPES))
 
 
 @router.get("/health", response_model=HealthResponse)

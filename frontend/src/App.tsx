@@ -1,6 +1,12 @@
 import { startTransition, useDeferredValue, useEffect, useState } from "react";
 
-import { fetchEntity, fetchGraph, queryGraphRag, searchEntities } from "./api/client";
+import {
+  fetchEntity,
+  fetchGraph,
+  fetchHealth,
+  queryGraphRag,
+  searchEntities,
+} from "./api/client";
 import { DetailPanel } from "./components/DetailPanel";
 import { GraphRagDock } from "./components/GraphRagDock";
 import { GraphView } from "./components/GraphView";
@@ -12,45 +18,6 @@ import type {
   GraphRagResponse,
   SearchItem,
 } from "./types/graph";
-
-const SAMPLE_ENTITIES: SearchItem[] = [
-  {
-    id: "person_jay_chou",
-    name: "\u5468\u6770\u4f26",
-    type: "Person",
-    summary: "Singer, composer, and producer.",
-  },
-  {
-    id: "person_fang_wenshan",
-    name: "\u65b9\u6587\u5c71",
-    type: "Person",
-    summary: "Lyricist and frequent collaborator.",
-  },
-  {
-    id: "person_jolin_tsai",
-    name: "\u8521\u4f9d\u6797",
-    type: "Person",
-    summary: "Pop singer with crossover collaborations.",
-  },
-  {
-    id: "band_mayday",
-    name: "\u4e94\u6708\u5929",
-    type: "Band",
-    summary: "Mandarin rock band.",
-  },
-  {
-    id: "work_qinghuaci",
-    name: "\u9752\u82b1\u74f7",
-    type: "Work",
-    summary: "A representative Jay Chou work.",
-  },
-  {
-    id: "work_turanhaoxiangni",
-    name: "\u7a81\u7136\u597d\u60f3\u4f60",
-    type: "Work",
-    summary: "A signature Mayday stadium ballad.",
-  },
-];
 
 function getLinkEndpointId(endpoint: GraphLink["source"] | { id?: unknown }): string | null {
   if (typeof endpoint === "string") {
@@ -114,9 +81,11 @@ function mergeGraphData(currentGraph: GraphData, incomingGraph: GraphData): Grap
 }
 
 export default function App() {
+  const [backendMode, setBackendMode] = useState("loading");
   const [query, setQuery] = useState("");
   const [entityType, setEntityType] = useState("");
   const [results, setResults] = useState<SearchItem[]>([]);
+  const [sampleItems, setSampleItems] = useState<SearchItem[]>([]);
   const [selectedEntity, setSelectedEntity] = useState<EntityDetails | null>(null);
   const [graphData, setGraphData] = useState<GraphData>({ nodes: [], links: [] });
   const [searchLoading, setSearchLoading] = useState(false);
@@ -133,8 +102,25 @@ export default function App() {
   const deferredGraphData = useDeferredValue(graphData);
 
   useEffect(() => {
-    void loadEntityContext("person_jay_chou", true, false);
+    void bootstrap();
   }, []);
+
+  async function bootstrap() {
+    setErrorMessage(null);
+    try {
+      const [health, items] = await Promise.all([fetchHealth(), searchEntities("", "", 6)]);
+      startTransition(() => {
+        setBackendMode(health.mode);
+        setSampleItems(items);
+      });
+      if (items.length > 0) {
+        await loadEntityContext(items[0].id, true, false);
+      }
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Failed to initialize app.");
+      setBackendMode("error");
+    }
+  }
 
   async function loadEntityContext(entityId: string, replaceGraph: boolean, showDetail: boolean) {
     setErrorMessage(null);
@@ -236,16 +222,20 @@ export default function App() {
     }
   }
 
+  const dataSourceLabel =
+    backendMode === "neo4j" ? "Neo4j" : backendMode === "mock" ? "Mock" : "Loading";
+
   return (
     <div className={`app-shell ${detailVisible ? "detail-open" : ""}`}>
       <div className="backdrop" />
       <SearchPanel
+        dataSourceLabel={dataSourceLabel}
         query={query}
         entityType={entityType}
         loading={searchLoading}
         results={results}
         selectedEntityId={selectedEntity?.id ?? null}
-        sampleItems={SAMPLE_ENTITIES}
+        sampleItems={sampleItems}
         graphNodeCount={graphData.nodes.length}
         graphLinkCount={graphData.links.length}
         expandedCount={expandedNodeIds.length}

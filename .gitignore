@@ -12,3 +12,10 @@ frontend/dist/
 
 .DS_Store
 .env
+
+# Data files (large files not tracked in git)
+data/*.txt
+data/*.json
+
+# spaCy models
+*.spacy

@@ -16,10 +16,31 @@ interface GraphViewProps {
 
 const NODE_COLORS: Record<string, string> = {
   Person: "#6fd3ff",
+  Location: "#8fd18a",
+  Event: "#ff9b8f",
+  Title: "#d5b3ff",
   Band: "#ffb56b",
   Work: "#7df0c4",
   Album: "#ffe08b",
   Genre: "#ff8f8f",
+};
+
+const RELATIONSHIP_LABELS: Record<string, string> = {
+  ASSOCIATED_WITH: "关联",
+  LOCATED_AT: "位于",
+  OCCURRED_IN: "发生于",
+  HELD_TITLE: "官职",
+  PARTICIPATED_IN: "参与",
+  ALLIED_WITH: "结盟",
+  FOUGHT_AGAINST: "交战",
+  SWORN_BROTHERS: "结义",
+  SERVED_UNDER: "效力于",
+  PERFORMED: "演唱",
+  COMPOSED: "创作",
+  WROTE_LYRICS_FOR: "作词",
+  IN_ALBUM: "收录于",
+  HAS_GENRE: "风格",
+  MEMBER_OF: "成员",
 };
 
 function getNodeRadius(
@@ -85,6 +106,7 @@ export function GraphView(props: GraphViewProps) {
 
   const graphRef = useRef<any>(null);
   const labelTextureCache = useRef(new Map<string, THREE.CanvasTexture>());
+  const linkLabelMaterialCache = useRef(new Map<string, THREE.SpriteMaterial>());
   const linkMaterialCache = useRef(
     new Map<string, THREE.MeshBasicMaterial | THREE.LineBasicMaterial>(),
   );
@@ -100,6 +122,12 @@ export function GraphView(props: GraphViewProps) {
         material.dispose();
       }
       linkMaterialCache.current.clear();
+
+      for (const material of linkLabelMaterialCache.current.values()) {
+        material.map?.dispose();
+        material.dispose();
+      }
+      linkLabelMaterialCache.current.clear();
     };
   }, []);
 
@@ -139,6 +167,49 @@ export function GraphView(props: GraphViewProps) {
 
     linkMaterialCache.current.set(cacheKey, material);
     return material;
+  }
+
+  function formatRelationshipLabel(type: string): string {
+    return RELATIONSHIP_LABELS[type] ?? type.replaceAll("_", " ");
+  }
+
+  function getLinkLabelMaterial(link: GraphLink): THREE.SpriteMaterial {
+    const isHighlighted = highlightedLinkSet.has(link.id);
+    const relationLabel = formatRelationshipLabel(link.type);
+    const cacheKey = `${relationLabel}:${isHighlighted ? "highlight" : "normal"}`;
+    const cached = linkLabelMaterialCache.current.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    const texture = createTextTexture(
+      relationLabel,
+      isHighlighted ? "#ffe0a3" : "#8fb2cc",
+      isHighlighted ? 26 : 22,
+      isHighlighted ? 6 : 5,
+    );
+    const material = new THREE.SpriteMaterial({
+      map: texture,
+      transparent: true,
+      depthWrite: false,
+      depthTest: false,
+      opacity: isHighlighted ? 0.95 : 0.68,
+    });
+    linkLabelMaterialCache.current.set(cacheKey, material);
+    return material;
+  }
+
+  function createLinkLabelObject(link: GraphLink): THREE.Sprite {
+    const material = getLinkLabelMaterial(link);
+    const sprite = new THREE.Sprite(material);
+    const texture = material.map;
+    const height = highlightedLinkSet.has(link.id) ? 4.2 : 3.4;
+    const image = texture?.image as { width?: number; height?: number } | undefined;
+    const widthRatio =
+      image && image.width && image.height ? image.width / image.height : 2.4;
+    sprite.scale.set(height * widthRatio, height, 1);
+    sprite.renderOrder = 12;
+    return sprite;
   }
 
   function createNodeObject(node: GraphNode): THREE.Object3D {
@@ -251,7 +322,21 @@ export function GraphView(props: GraphViewProps) {
         nodeOpacity={0}
         linkLabel={(link: object) => {
           const graphLink = link as GraphLink;
-          return graphLink.type;
+          return formatRelationshipLabel(graphLink.type);
+        }}
+        linkThreeObjectExtend
+        linkThreeObject={(link: object) => createLinkLabelObject(link as GraphLink)}
+        linkPositionUpdate={(spriteObject: object, coords: object) => {
+          const sprite = spriteObject as THREE.Object3D;
+          const position = coords as {
+            start: { x: number; y: number; z: number };
+            end: { x: number; y: number; z: number };
+          };
+          const midX = (position.start.x + position.end.x) / 2;
+          const midY = (position.start.y + position.end.y) / 2;
+          const midZ = (position.start.z + position.end.z) / 2;
+          sprite.position.set(midX, midY, midZ);
+          return true;
         }}
         linkColor={(link: object) => {
           const graphLink = link as GraphLink;

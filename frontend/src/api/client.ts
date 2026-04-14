@@ -2,6 +2,7 @@ import type {
   EntityDetails,
   GraphData,
   GraphRagResponse,
+  HealthResponse,
   SearchItem,
 } from "../types/graph";
 
@@ -35,14 +36,20 @@ async function postJson<T>(path: string, payload: unknown): Promise<T> {
 export async function searchEntities(
   query: string,
   entityType: string,
+  limit = 20,
 ): Promise<SearchItem[]> {
   const params = new URLSearchParams();
   params.set("q", query);
+  params.set("limit", String(limit));
   if (entityType) {
     params.set("type", entityType);
   }
   const response = await fetchJson<{ items: SearchItem[] }>(`/search?${params.toString()}`);
   return response.items;
+}
+
+export async function fetchHealth(): Promise<HealthResponse> {
+  return fetchJson<HealthResponse>("/health");
 }
 
 export async function fetchEntity(entityId: string): Promise<EntityDetails> {

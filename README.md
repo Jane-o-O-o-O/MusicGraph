@@ -2,16 +2,17 @@
 
 # MusicGraph
 
-### 面向音乐实体关系的 3D 图谱浏览器
+### 面向实体关系探索的 3D 知识图谱浏览器
 
-一个以 `Neo4j + FastAPI + React + TypeScript` 为核心的音乐知识图谱原型，  
-当前聚焦两件事：`实体搜索` 和 `3D 图谱展示`。
+一个以 `Neo4j + FastAPI + React + TypeScript` 为核心的通用知识图谱原型，
+支持两种模式：**音乐关系探索** 和 **三国演义关系探索**。
 
 <p>
   <img src="https://img.shields.io/badge/Status-MVP%20In%20Progress-53c7ff?style=for-the-badge" alt="Status" />
   <img src="https://img.shields.io/badge/Backend-FastAPI-14b86a?style=for-the-badge" alt="FastAPI" />
   <img src="https://img.shields.io/badge/Frontend-React%20%2B%20TypeScript-2f7df6?style=for-the-badge" alt="React TypeScript" />
   <img src="https://img.shields.io/badge/Database-Neo4j-0f766e?style=for-the-badge" alt="Neo4j" />
+  <img src="https://img.shields.io/badge/NLP-spaCy%20zh__core__web__md-7c6bc2?style=for-the-badge" alt="spaCy" />
 </p>
 
 </div>
@@ -20,14 +21,19 @@
 
 ## 项目简介
 
-`MusicGraph` 不是通用后台系统，也不是完整的 GraphRAG 平台。  
-当前版本更像一个“音乐关系探索器”：
+`MusicGraph` 不是通用后台系统，也不是完整的 GraphRAG 平台。
+它支持两种模式：
 
+### 模式 1: 音乐知识图谱
 - 搜索人物、乐团、作品、专辑、流派
 - 在 3D 空间中展开实体邻居关系
-- 查看节点详情
-- 计算两个实体之间的关系路径
-- 支持 `mock` 模式快速联调，也支持切换到真实 `Neo4j`
+
+### 模式 2: 三国演义知识图谱 ⭐ NEW
+- 使用 spaCy 中文模型从三国演义文本中自动提取实体和关系
+- 内置 60+ 核心人物别名映射表，支持实体消歧（"玄德" → "刘备"）
+- 基于共现分析自动构建人物关系网络
+- 搜索人物、地点、事件、官职
+- 浏览三国人物之间的关系网络
 
 第一阶段暂不包含：
 
@@ -204,10 +210,20 @@ MusicGraph/
       schema.cypher
       seed.cypher
       reset.cypher
+      romance_schema.cypher    # 三国演义 schema (自动生成)
+      romance_seed.cypher      # 三国演义种子数据 (自动生成)
     scripts/
       init_neo4j.py
     requirements.txt
     .env.example
+  data/
+    README.md
+    romance_entities.json      # 三国演义实体别名映射表
+    三国演义.txt                # 源文件 (不提交到 git)
+    entities.json              # 提取的实体 (自动生成)
+    relationships.json         # 提取的关系 (自动生成)
+  scripts/
+    build_romance_graph.py     # 三国演义图谱构建脚本
   frontend/
     src/
       api/
@@ -222,6 +238,7 @@ MusicGraph/
     architecture.md
     database.md
     frontend-backend.md
+    romance-mode.md            # 三国演义模式文档
   docker-compose.yml
   README.md
 ```
@@ -257,18 +274,21 @@ MusicGraph/
 - [x] 接入 `mock` 数据模式
 - [x] 补齐 `Neo4j` 初始化脚本
 - [x] 优化第一轮前端视觉和交互
+- [x] 支持三国演义知识图谱模式
 - [ ] 完成真实 `Neo4j` 端到端联调
 - [ ] 增加节点常驻标签
 - [ ] 增加关系类型筛选
 - [ ] 增加更细的图谱布局控制
 - [ ] 准备真实音乐数据导入方案
+- [ ] 完善三国演义实体关系标注
 
 ## 说明
 
 这个仓库当前最适合用来做两件事：
 
-1. 快速验证音乐实体关系图在 `Neo4j + 3D UI` 下的展示方式  
+1. 快速验证音乐实体关系图在 `Neo4j + 3D UI` 下的展示方式
 2. 作为后续 GraphRAG 或更完整音乐知识图谱平台的前置原型
+3. **使用 spaCy 从三国演义文本中自动提取知识图谱并可视化浏览**
 
 ---
 

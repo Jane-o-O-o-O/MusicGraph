@@ -1,6 +1,7 @@
 import type { SearchItem } from "../types/graph";
 
 interface SearchPanelProps {
+  dataSourceLabel: string;
   query: string;
   entityType: string;
   loading: boolean;
@@ -17,10 +18,11 @@ interface SearchPanelProps {
   onSelect: (item: SearchItem) => void;
 }
 
-const ENTITY_TYPES = ["", "Person", "Band", "Work", "Album", "Genre"];
+const ENTITY_TYPES = ["", "Person", "Location", "Event", "Title", "Band", "Work", "Album", "Genre"];
 
 export function SearchPanel(props: SearchPanelProps) {
   const {
+    dataSourceLabel,
     query,
     entityType,
     loading,
@@ -40,10 +42,10 @@ export function SearchPanel(props: SearchPanelProps) {
   return (
     <aside className="panel panel-left">
       <div className="panel-header panel-hero">
-        <p className="eyebrow">Music Explorer</p>
-        <h1>音乐关系图谱</h1>
+        <p className="eyebrow">Knowledge Explorer</p>
+        <h1>关系知识图谱</h1>
         <p className="panel-copy">
-          搜索人物、乐团、作品与专辑，在 3D 空间里逐层展开音乐世界的关系网络。
+          搜索人物、地点、事件、作品等实体，在 3D 空间里逐层展开当前数据集的关系网络。
         </p>
       </div>
 
@@ -71,20 +73,24 @@ export function SearchPanel(props: SearchPanelProps) {
       <section className="stack glass-block">
         <div className="section-title">
           <h2>快速开始</h2>
-          <span>Mock Seed</span>
+          <span>{dataSourceLabel}</span>
         </div>
         <div className="sample-grid">
-          {sampleItems.map((item) => (
-            <button
-              key={item.id}
-              className={`sample-chip ${selectedEntityId === item.id ? "is-active" : ""}`}
-              onClick={() => onSelect(item)}
-              type="button"
-            >
-              <span>{item.name}</span>
-              <small>{item.type}</small>
-            </button>
-          ))}
+          {sampleItems.length === 0 ? (
+            <p className="placeholder">当前后端还没有返回可用示例实体。</p>
+          ) : (
+            sampleItems.map((item) => (
+              <button
+                key={item.id}
+                className={`sample-chip ${selectedEntityId === item.id ? "is-active" : ""}`}
+                onClick={() => onSelect(item)}
+                type="button"
+              >
+                <span>{item.name}</span>
+                <small>{item.type}</small>
+              </button>
+            ))
+          )}
         </div>
       </section>
 
@@ -96,7 +102,7 @@ export function SearchPanel(props: SearchPanelProps) {
           <input
             id="search-input"
             className="text-input"
-            placeholder="周杰伦、青花瓷、五月天..."
+            placeholder="刘备、诸葛亮、赤壁之战、周杰伦..."
             value={query}
             onChange={(event) => onQueryChange(event.target.value)}
             onKeyDown={(event) => {
@@ -134,7 +140,7 @@ export function SearchPanel(props: SearchPanelProps) {
         </div>
         <div className="result-list">
           {results.length === 0 ? (
-            <p className="placeholder">先输入关键词，或者直接点击上方样例实体。</p>
+            <p className="placeholder">先输入关键词，或者直接点击上方示例实体。</p>
           ) : (
             results.map((item) => (
               <button

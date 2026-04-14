@@ -1,4 +1,12 @@
-export type EntityType = "Person" | "Band" | "Work" | "Album" | "Genre";
+export type EntityType =
+  | "Person"
+  | "Band"
+  | "Work"
+  | "Album"
+  | "Genre"
+  | "Location"
+  | "Event"
+  | "Title";
 
 export interface SearchItem {
   id: string;
@@ -54,4 +62,9 @@ export interface GraphRagResponse {
   matched_entities: SearchItem[];
   evidence: GraphRagEvidence[];
   graph: GraphData;
+}
+
+export interface HealthResponse {
+  status: string;
+  mode: string;
 }

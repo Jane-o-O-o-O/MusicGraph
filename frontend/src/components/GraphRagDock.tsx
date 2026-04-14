@@ -44,7 +44,7 @@ export function GraphRagDock(props: GraphRagDockProps) {
         <div className="graphrag-dock-controls">
           <input
             className="text-input graphrag-dock-input"
-            placeholder="例如：周杰伦和方文山有什么关系？"
+            placeholder="例如：刘备和诸葛亮有什么关系？"
             value={question}
             onChange={(event) => onQuestionChange(event.target.value)}
           />

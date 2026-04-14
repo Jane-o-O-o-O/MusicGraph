@@ -24,6 +24,9 @@ const META_LABELS: Record<string, string> = {
 
 const TYPE_LABELS: Record<string, string> = {
   Person: "人物",
+  Location: "地点",
+  Event: "事件",
+  Title: "官职",
   Band: "乐团",
   Work: "作品",
   Album: "专辑",
@@ -101,7 +104,7 @@ export function DetailPanel({ entity, errorMessage, visible }: DetailPanelProps)
           </section>
 
           <div className="status-card status-card-muted">
-            可以继续点击图中的相邻节点，围绕当前实体逐层扩展一跳邻居，逐步构建自己的音乐子图。
+            可以继续点击图中的相邻节点，围绕当前实体逐层扩展一跳邻居，逐步构建自己的关系子图。
           </div>
         </>
       ) : (
